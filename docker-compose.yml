@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: tracescope-postgres
+    environment:
+      POSTGRES_DB: tracescope
+      POSTGRES_USER: tracescope
+      POSTGRES_PASSWORD: tracescope
+    ports:
+      - "5432:5432"
+    volumes:
+      - tracescope-postgres:/var/lib/postgresql/data
+
+volumes:
+  tracescope-postgres:

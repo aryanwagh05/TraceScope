@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(cuid())
+  email      String      @unique
+  name       String
+  workspaces Workspace[]
+  feedback   Feedback[]
+  createdAt  DateTime    @default(now())
+}
+
+model Workspace {
+  id        String    @id @default(cuid())
+  name      String
+  users     User[]
+  projects  Project[]
+  createdAt DateTime  @default(now())
+}
+
+model Project {
+  id          String      @id @default(cuid())
+  name        String
+  environment String
+  workspaceId String
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
+  traces      Trace[]
+  prompts     Prompt[]
+  alertRules  AlertRule[]
+}
+
+model Trace {
+  id                String           @id
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id])
+  model             String
+  status            String
+  latencyMs         Int
+  costUsd           Decimal
+  tokenCount        Int
+  hallucinationRisk Float
+  tags              String[]
+  spans             Span[]
+  retrievalChunks   RetrievalChunk[]
+  evalResults       EvalResult[]
+  feedback          Feedback[]
+  createdAt         DateTime         @default(now())
+}
+
+model Span {
+  id         String   @id @default(cuid())
+  traceId    String
+  trace      Trace    @relation(fields: [traceId], references: [id])
+  type       String
+  name       String
+  status     String
+  latencyMs  Int
+  tokenCount Int
+  costUsd    Decimal
+  metadata   Json
+  startedAt  DateTime
+}
+
+model Prompt {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  name      String
+  version   String
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model RetrievalChunk {
+  id      String  @id @default(cuid())
+  traceId String
+  trace   Trace   @relation(fields: [traceId], references: [id])
+  source  String
+  score   Float
+  cited   Boolean
+  excerpt String
+}
+
+model EvalResult {
+  id        String   @id @default(cuid())
+  traceId   String
+  trace     Trace    @relation(fields: [traceId], references: [id])
+  evaluator String
+  score     Float
+  passed    Boolean
+  notes     String
+  createdAt DateTime @default(now())
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  traceId   String
+  trace     Trace    @relation(fields: [traceId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    String
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model EvalDataset {
+  id        String     @id @default(cuid())
+  name      String
+  cases     EvalCase[]
+  runs      EvalRun[]
+  createdAt DateTime   @default(now())
+}
+
+model EvalCase {
+  id        String      @id @default(cuid())
+  datasetId String
+  dataset   EvalDataset @relation(fields: [datasetId], references: [id])
+  input     String
+  expected  Json
+}
+
+model EvalRun {
+  id        String      @id @default(cuid())
+  datasetId String
+  dataset   EvalDataset @relation(fields: [datasetId], references: [id])
+  status    String
+  summary   Json
+  createdAt DateTime    @default(now())
+}
+
+model AlertRule {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  name      String
+  metric    String
+  threshold String
+  severity  String
+  enabled   Boolean  @default(true)
+}
