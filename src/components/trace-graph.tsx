@@ -74,7 +74,7 @@ function TraceScene({ spans }: { spans: Span[] }) {
 export function TraceGraph({ spans }: { spans: Span[] }) {
   return (
     <div className="h-[360px] w-full overflow-hidden border-y border-border bg-[#eef2f3]">
-      <Canvas gl={{ antialias: true, alpha: true }} dpr={[1, 2]}>
+      <Canvas gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }} dpr={[1, 2]}>
         <PerspectiveCamera makeDefault position={[0, 1.2, 6.3]} fov={48} />
         <TraceScene spans={spans} />
         <OrbitControls enablePan={false} enableZoom={false} minPolarAngle={1.1} maxPolarAngle={1.85} />

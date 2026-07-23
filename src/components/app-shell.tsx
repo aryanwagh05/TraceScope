@@ -53,10 +53,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                style={active ? { color: "#ffffff" } : undefined}
                 className={clsx(
                   "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition",
                   active
-                    ? "bg-ink text-white"
+                    ? "bg-ink text-[#ffffff]"
                     : "text-muted hover:bg-surface-strong hover:text-ink",
                 )}
               >
@@ -96,10 +97,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                style={active ? { color: "#ffffff" } : undefined}
                 className={clsx(
                   "flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-xs font-medium",
                   active
-                    ? "border-ink bg-ink text-white"
+                    ? "border-ink bg-ink text-[#ffffff]"
                     : "border-border bg-surface text-muted",
                 )}
               >
