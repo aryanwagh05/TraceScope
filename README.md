@@ -37,7 +37,7 @@ flowchart LR
 - React Three Fiber, Drei, Three.js
 - Recharts for dashboard visualizations
 - Next.js API routes for trace ingestion and eval execution
-- Local JSON persistence for ingested traces, with seeded demo traces as the initial fallback
+- Local JSON persistence for ingested traces and workspace state
 - Prisma schema for the production Postgres data model
 - Vitest tests for evaluator logic
 - GitHub Actions workflow for lint, tests, and build
@@ -46,7 +46,7 @@ flowchart LR
 
 The production schema is in `prisma/schema.prisma` and covers users, workspaces, projects, traces, spans, prompts, retrieval chunks, eval results, feedback, eval datasets, eval runs, and alert rules.
 
-At runtime the app reads traces from `data/traces.json` when local telemetry has been ingested. If that file does not exist yet, it falls back to realistic seed traces in `src/lib/demo-data.ts`.
+At runtime the app reads traces from `data/traces.json`. A fresh checkout starts empty, so the dashboard only shows real telemetry after an app posts to the ingestion endpoint. Seed traces are kept as test fixtures in `src/lib/demo-data.ts`, not as runtime data.
 
 ## Trace Ingestion
 
@@ -55,6 +55,7 @@ The working ingestion endpoint is `POST /api/traces`. It accepts a trace payload
 ```bash
 curl -X POST http://localhost:3000/api/traces \
   -H "content-type: application/json" \
+  -H "x-tracescope-key: ts_dev_local_key" \
   -d '{
     "app": "docs-qa",
     "environment": "dev",
@@ -71,6 +72,9 @@ curl -X POST http://localhost:3000/api/traces \
 ```
 
 `GET /api/traces` returns the current persisted trace collection.
+
+Ingestion keys are managed on `/settings`. The default local key is
+`ts_dev_local_key`, and generated keys are stored in `data/settings.json`.
 
 ## How Evals Work
 

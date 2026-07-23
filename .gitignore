@@ -44,4 +44,4 @@ next-env.d.ts
 /tracescope-scaffold
 
 # local trace ingestion store
-/data/traces.json
+/data/*.json

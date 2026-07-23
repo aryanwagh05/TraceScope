@@ -79,10 +79,12 @@ export interface AlertRule {
   id: string;
   name: string;
   metric: string;
+  operator?: ">" | "<";
   threshold: string;
   severity: Severity;
   status: "healthy" | "watching" | "firing";
   lastTriggered: string;
+  enabled?: boolean;
 }
 
 export interface EvalDatasetCase {
@@ -91,6 +93,7 @@ export interface EvalDatasetCase {
   input: string;
   expectedSignals: string[];
   promotedFromTrace?: string;
+  createdAt?: string;
 }
 
 export interface ExperimentResult {
@@ -102,4 +105,43 @@ export interface ExperimentResult {
   costDelta: number;
   latencyDelta: number;
   recommendation: string;
+}
+
+export interface WorkspaceSettings {
+  workspaceName: string;
+  ownerName: string;
+  groundednessMin: number;
+  citationSupportMin: number;
+  schemaValidityMin: number;
+  latencyP95Ms: number;
+  avgCostUsd: number;
+  hallucinationRiskMax: number;
+  schemaFailureRateMax: number;
+  retrievalQualityMin: number;
+  ingestionKeys: IngestionKey[];
+}
+
+export interface IngestionKey {
+  id: string;
+  name: string;
+  token: string;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+export interface EvalRun {
+  id: string;
+  createdAt: string;
+  caseCount: number;
+  matchedTraceCount: number;
+  passRate: number;
+  results: EvalRunResult[];
+}
+
+export interface EvalRunResult {
+  caseId: string;
+  traceId?: string;
+  passed: boolean;
+  score: number;
+  notes: string;
 }

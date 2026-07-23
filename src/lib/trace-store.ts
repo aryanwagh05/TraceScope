@@ -20,14 +20,14 @@ async function readPersistedTraces() {
   try {
     const raw = await readFile(tracesPath, "utf8");
     const parsed = JSON.parse(raw) as Trace[];
-    return Array.isArray(parsed) ? parsed : seedTraces;
+    return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
     if (
       error instanceof Error &&
       "code" in error &&
       (error as NodeJS.ErrnoException).code === "ENOENT"
     ) {
-      return seedTraces;
+      return [];
     }
 
     throw error;

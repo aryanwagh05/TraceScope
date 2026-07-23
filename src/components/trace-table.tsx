@@ -11,6 +11,17 @@ import {
 } from "@/lib/format";
 
 export function TraceTable({ traces }: { traces: Trace[] }) {
+  if (traces.length === 0) {
+    return (
+      <div className="rounded-md border border-border bg-surface p-6">
+        <p className="text-sm font-semibold text-ink">No traces found</p>
+        <p className="mt-1 text-sm leading-6 text-muted">
+          Ingest telemetry or loosen the active filters to inspect trace data.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto rounded-md border border-border bg-surface">
       <table className="data-table min-w-[920px] text-left text-sm">

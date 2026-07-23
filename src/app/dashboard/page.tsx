@@ -33,13 +33,26 @@ export default async function DashboardPage() {
         action={
           <Link
             href="/docs"
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white"
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-[#ffffff]"
           >
             Integration docs
             <ArrowRight size={16} />
           </Link>
         }
       />
+
+      {traces.length === 0 ? (
+        <section className="mb-5 rounded-md border border-border bg-surface p-4">
+          <h2 className="text-lg font-semibold text-ink">No traces ingested yet</h2>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            Connect an application through the ingestion endpoint to populate the
+            dashboard, alerts, experiments, datasets, and eval runs with real telemetry.
+          </p>
+          <Link href="/docs" className="mt-3 inline-flex text-sm font-semibold text-scope-blue">
+            Open integration docs
+          </Link>
+        </section>
+      ) : null}
 
       <section className="grid metric-grid gap-3">
         {dashboardMetrics.map((metric) => (
@@ -110,7 +123,9 @@ export default async function DashboardPage() {
             <p className="text-sm text-muted">
               Eval average:{" "}
               {formatPercent(
-                traces.reduce((sum, trace) => sum + trace.evalScore, 0) / traces.length,
+                traces.length
+                  ? traces.reduce((sum, trace) => sum + trace.evalScore, 0) / traces.length
+                  : 0,
               )}
             </p>
           </div>

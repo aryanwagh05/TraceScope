@@ -27,14 +27,22 @@ const navItems: Array<{ href: string; label: string; icon: LucideIcon }> = [
   { href: "/docs", label: "Integration", icon: BookOpen },
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  workspaceName,
+  ownerName,
+}: {
+  children: React.ReactNode;
+  workspaceName: string;
+  ownerName: string;
+}) {
   const pathname = usePathname();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <aside className="fixed left-0 top-0 z-30 hidden h-screen w-64 border-r border-border bg-[#fbfaf6] px-4 py-5 lg:block">
         <Link href="/dashboard" className="mb-8 flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-md bg-ink text-white">
+          <div className="grid h-10 w-10 place-items-center rounded-md bg-ink text-[#ffffff]">
             <Braces size={22} strokeWidth={1.8} />
           </div>
           <div>
@@ -70,21 +78,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="absolute bottom-5 left-4 right-4 border-t border-border pt-4">
           <p className="text-xs font-medium text-muted">Workspace</p>
-          <p className="mt-1 text-sm font-semibold text-ink">AI Platform Team</p>
-          <p className="mt-1 text-xs text-muted">prod, staging, dev</p>
+          <p className="mt-1 text-sm font-semibold text-ink">{workspaceName}</p>
+          <p className="mt-1 text-xs text-muted">{ownerName}</p>
         </div>
       </aside>
 
       <header className="sticky top-0 z-20 border-b border-border bg-[#fbfaf6]/95 px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-md bg-ink text-white">
+            <div className="grid h-9 w-9 place-items-center rounded-md bg-ink text-[#ffffff]">
               <Braces size={20} strokeWidth={1.8} />
             </div>
             <span className="text-sm font-semibold">TraceScope</span>
           </Link>
-          <span className="rounded-md border border-border px-2 py-1 text-xs text-muted">
-            prod
+          <span className="max-w-[46vw] truncate text-xs font-medium text-muted">
+            {workspaceName}
           </span>
         </div>
         <nav className="mt-3 flex gap-2 overflow-x-auto pb-1">
