@@ -1,9 +1,13 @@
 import { Filter, Search } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { TraceTable } from "@/components/trace-table";
-import { traces } from "@/lib/demo-data";
+import { listTraces } from "@/lib/trace-store";
 
-export default function TracesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function TracesPage() {
+  const traces = await listTraces();
+
   return (
     <>
       <PageHeader

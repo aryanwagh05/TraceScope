@@ -109,7 +109,7 @@ const chunks: Record<string, RetrievalChunk[]> = {
   ],
 };
 
-export const traces: Trace[] = [
+export const seedTraces: Trace[] = [
   {
     id: "tr-1008",
     app: "RAG Support Bot",
@@ -266,69 +266,6 @@ export const traces: Trace[] = [
   },
 ];
 
-export const dashboardMetrics = [
-  {
-    label: "Total requests",
-    value: "18.4k",
-    delta: "+12.8%",
-    detail: "24 hour production traffic",
-  },
-  {
-    label: "Avg latency",
-    value: "1.42s",
-    delta: "-8.4%",
-    detail: "p95 at 3.8s",
-  },
-  {
-    label: "Token cost",
-    value: "$814",
-    delta: "+3.1%",
-    detail: "$0.044 avg request",
-  },
-  {
-    label: "Error rate",
-    value: "1.7%",
-    delta: "-0.6%",
-    detail: "tool and schema failures",
-  },
-  {
-    label: "Eval pass rate",
-    value: "86.2%",
-    delta: "+4.5%",
-    detail: "last 31 eval runs",
-  },
-  {
-    label: "Hallucination risk",
-    value: "7.4%",
-    delta: "-2.2%",
-    detail: "groundedness failures",
-  },
-];
-
-export const trafficSeries = [
-  { time: "00:00", latency: 1380, cost: 31, passRate: 83 },
-  { time: "04:00", latency: 1240, cost: 28, passRate: 87 },
-  { time: "08:00", latency: 1540, cost: 44, passRate: 82 },
-  { time: "12:00", latency: 1480, cost: 53, passRate: 89 },
-  { time: "16:00", latency: 1320, cost: 48, passRate: 91 },
-  { time: "20:00", latency: 1420, cost: 39, passRate: 86 },
-];
-
-export const modelCostBreakdown = [
-  { model: "gpt-5.6-sol", cost: 436, requests: 8300 },
-  { model: "gpt-5.4-codex", cost: 204, requests: 2800 },
-  { model: "gpt-5.4-mini", cost: 116, requests: 6200 },
-  { model: "reranker-v2", cost: 58, requests: 9100 },
-];
-
-export const evaluatorBreakdown = [
-  { name: "Groundedness", pass: 88, fail: 12 },
-  { name: "Citation support", pass: 82, fail: 18 },
-  { name: "Schema validity", pass: 94, fail: 6 },
-  { name: "Tool correctness", pass: 79, fail: 21 },
-  { name: "Cost threshold", pass: 91, fail: 9 },
-];
-
 export const alerts: AlertRule[] = [
   {
     id: "al-1",
@@ -431,23 +368,3 @@ export const experiments: ExperimentResult[] = [
       "Adopt tighter retrieval threshold and promote failures into the eval set.",
   },
 ];
-
-export function getTraceById(id: string) {
-  return traces.find((trace) => trace.id === id);
-}
-
-export function getRiskLabel(score: number) {
-  if (score < 0.15) {
-    return "low";
-  }
-
-  if (score < 0.32) {
-    return "medium";
-  }
-
-  return "high";
-}
-
-export function aggregateEvalScore() {
-  return traces.reduce((sum, trace) => sum + trace.evalScore, 0) / traces.length;
-}

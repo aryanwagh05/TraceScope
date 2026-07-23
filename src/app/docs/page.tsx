@@ -1,37 +1,42 @@
 import { Clipboard, TerminalSquare } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 
-const pythonSnippet = `from tracescope import TraceScope
+const pythonSnippet = `import requests
 
-client = TraceScope(api_key=os.environ["TRACESCOPE_API_KEY"])
+trace = {
+    "app": "support-bot",
+    "environment": "prod",
+    "model": "gpt-5.6-sol",
+    "userInput": user_message,
+    "systemPrompt": system_prompt,
+    "finalResponse": answer,
+    "tags": ["rag", "customer-support"],
+    "spans": [
+        {"name": "Retrieve chunks", "type": "retrieval", "status": "ok", "latencyMs": 142},
+        {"name": "Generate answer", "type": "model", "status": "ok", "latencyMs": 684, "tokenCount": 1800, "costUsd": 0.024},
+    ],
+    "evalResults": [
+        {"evaluator": "groundedness", "score": 0.91, "passed": True, "notes": "Answer is supported by retrieved context."}
+    ],
+}
 
-with client.trace(app="support-bot", environment="prod") as trace:
-    trace.log_prompt(system=system_prompt, user=user_message)
-    chunks = retriever.search(user_message)
-    trace.log_retrieval(chunks)
-    response = openai_client.responses.create(
-        model="gpt-5.6-sol",
-        input=user_message,
-    )
-    trace.log_model_response(response)
-    trace.log_eval("groundedness", score=0.91, passed=True)`;
+requests.post("http://localhost:3000/api/traces", json=trace, timeout=5)`;
 
-const typescriptSnippet = `import { traceOpenAI } from "@tracescope/sdk";
-
-export async function answerQuestion(input: string) {
-  return traceOpenAI({
+const typescriptSnippet = `export async function answerQuestion(input: string) {
+  const trace = await runInstrumentedWorkflow({
     app: "docs-qa",
     environment: "prod",
     model: "gpt-5.6-sol",
     tags: ["rag", "customer-facing"],
-    run: async ({ logRetrieval, logEval }) => {
-      const chunks = await searchDocs(input);
-      logRetrieval(chunks);
-      const response = await openai.responses.create({ model: "gpt-5.6-sol", input });
-      logEval("citation_support", evaluateCitations(response, chunks));
-      return response;
-    },
   });
+
+  await fetch("/api/traces", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(trace),
+  });
+
+  return trace.finalResponse;
 }`;
 
 export default function DocsPage() {
@@ -40,7 +45,7 @@ export default function DocsPage() {
       <PageHeader
         eyebrow="Integration docs"
         title="Instrument prompts, retrieval, tools, evals, and feedback"
-        description="These examples show how a production app would send OpenTelemetry-style trace and span data to TraceScope."
+        description="These examples send OpenTelemetry-style trace and span data to the working local ingestion endpoint."
       />
 
       <section className="grid gap-4 xl:grid-cols-2">

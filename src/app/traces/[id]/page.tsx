@@ -4,7 +4,8 @@ import { ArrowLeft, CheckCircle2, CircleAlert, MessageSquareText } from "lucide-
 import { PageHeader } from "@/components/page-header";
 import { StatusPill } from "@/components/status-pill";
 import { TraceGraph } from "@/components/trace-graph";
-import { getRiskLabel, getTraceById } from "@/lib/demo-data";
+import { getRiskLabel } from "@/lib/trace-analytics";
+import { getTraceById } from "@/lib/trace-store";
 import {
   formatCurrency,
   formatDateTime,
@@ -19,7 +20,7 @@ export default async function TraceDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const trace = getTraceById(id);
+  const trace = await getTraceById(id);
 
   if (!trace) {
     notFound();
@@ -172,3 +173,5 @@ export default async function TraceDetailPage({
     </>
   );
 }
+
+export const dynamic = "force-dynamic";

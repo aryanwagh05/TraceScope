@@ -1,10 +1,15 @@
 import { CheckCircle2, FlaskConical, XCircle } from "lucide-react";
 import { EvaluatorChart } from "@/components/charts";
 import { PageHeader } from "@/components/page-header";
-import { evaluatorBreakdown, traces } from "@/lib/demo-data";
+import { calculateEvaluatorBreakdown } from "@/lib/trace-analytics";
+import { listTraces } from "@/lib/trace-store";
 import { formatPercent } from "@/lib/format";
 
-export default function EvalsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function EvalsPage() {
+  const traces = await listTraces();
+  const evaluatorBreakdown = calculateEvaluatorBreakdown(traces);
   const allResults = traces.flatMap((trace) => trace.evalResults);
   const passCount = allResults.filter((result) => result.passed).length;
 

@@ -6,7 +6,7 @@ The project is designed as a recruiter-facing AI engineering portfolio piece: it
 
 ## Features
 
-- Dashboard for request volume, latency, token cost, error rate, eval pass rate, and hallucination risk.
+- Dashboard for request volume, latency, token cost, error rate, eval pass rate, and hallucination risk calculated from trace records.
 - Trace explorer with model, environment, cost, latency, token count, tags, status, and eval score.
 - Trace detail page with a restrained 3D execution topology using React Three Fiber.
 - RAG inspection for retrieved chunks, similarity scores, source documents, citation coverage, and missing-context signals.
@@ -14,7 +14,7 @@ The project is designed as a recruiter-facing AI engineering portfolio piece: it
 - Prompt/model experiments with quality, latency, and cost deltas.
 - Regression dataset seeded from bad production traces.
 - Alert rules for hallucination risk, latency spikes, cost spikes, schema failures, and retrieval quality drops.
-- Integration docs with Python and TypeScript instrumentation examples.
+- Integration docs with Python and TypeScript instrumentation examples that post to `/api/traces`.
 
 ## Architecture
 
@@ -22,7 +22,7 @@ The project is designed as a recruiter-facing AI engineering portfolio piece: it
 flowchart LR
   App["AI app or agent"] --> SDK["TraceScope SDK wrapper"]
   SDK --> API["Next.js API routes"]
-  API --> Store["Postgres trace store"]
+  API --> Store["Local JSON trace store"]
   API --> Eval["Evaluator pipeline"]
   Eval --> Store
   Store --> UI["TraceScope dashboard"]
@@ -36,7 +36,8 @@ flowchart LR
 - Tailwind CSS 4
 - React Three Fiber, Drei, Three.js
 - Recharts for dashboard visualizations
-- Next.js API routes for ingestion and eval execution stubs
+- Next.js API routes for trace ingestion and eval execution
+- Local JSON persistence for ingested traces, with seeded demo traces as the initial fallback
 - Prisma schema for the production Postgres data model
 - Vitest tests for evaluator logic
 - GitHub Actions workflow for lint, tests, and build
@@ -45,7 +46,31 @@ flowchart LR
 
 The production schema is in `prisma/schema.prisma` and covers users, workspaces, projects, traces, spans, prompts, retrieval chunks, eval results, feedback, eval datasets, eval runs, and alert rules.
 
-The app currently uses realistic seeded telemetry in `src/lib/demo-data.ts` so the dashboard is impressive without production traffic.
+At runtime the app reads traces from `data/traces.json` when local telemetry has been ingested. If that file does not exist yet, it falls back to realistic seed traces in `src/lib/demo-data.ts`.
+
+## Trace Ingestion
+
+The working ingestion endpoint is `POST /api/traces`. It accepts a trace payload, normalizes missing totals from spans, computes status/eval/risk defaults where possible, persists the trace locally, and makes the dashboard/traces/evals pages recalculate from the updated trace set.
+
+```bash
+curl -X POST http://localhost:3000/api/traces \
+  -H "content-type: application/json" \
+  -d '{
+    "app": "docs-qa",
+    "environment": "dev",
+    "model": "gpt-5.4-mini",
+    "userInput": "What does TraceScope track?",
+    "finalResponse": "TraceScope tracks prompts, spans, costs, latency, evals, and feedback.",
+    "spans": [
+      { "name": "Generate answer", "type": "model", "status": "ok", "latencyMs": 420, "tokenCount": 900, "costUsd": 0.012 }
+    ],
+    "evalResults": [
+      { "evaluator": "relevance", "score": 0.94, "passed": true, "notes": "Directly answered the question." }
+    ]
+  }'
+```
+
+`GET /api/traces` returns the current persisted trace collection.
 
 ## How Evals Work
 
@@ -89,7 +114,7 @@ The GitHub Actions workflow in `.github/workflows/evals.yml` runs the same comma
 
 ## What I Would Improve Next
 
-- Persist traces to Postgres through Prisma and add workspace auth.
+- Replace the local JSON trace store with Postgres through Prisma and add workspace auth.
 - Add real OpenTelemetry export/import support.
 - Add Playwright screenshots to README after deployment.
 - Wire alerts to Slack, email, or incident tools.

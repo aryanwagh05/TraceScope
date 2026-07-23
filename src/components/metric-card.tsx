@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 
 export function MetricCard({
   label,
@@ -12,6 +12,8 @@ export function MetricCard({
   detail: string;
 }) {
   const positive = delta.startsWith("+");
+  const negative = delta.startsWith("-");
+  const DeltaIcon = positive ? ArrowUpRight : negative ? ArrowDownRight : Minus;
 
   return (
     <article className="rounded-md border border-border bg-surface p-4">
@@ -19,10 +21,14 @@ export function MetricCard({
         <p className="text-xs font-medium uppercase text-muted">{label}</p>
         <span
           className={`inline-flex items-center gap-1 text-xs font-semibold ${
-            positive ? "text-scope-green" : "text-scope-blue"
+            positive
+              ? "text-scope-green"
+              : negative
+                ? "text-scope-amber"
+                : "text-scope-blue"
           }`}
         >
-          {positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+          <DeltaIcon size={14} />
           {delta}
         </span>
       </div>

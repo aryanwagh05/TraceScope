@@ -5,24 +5,24 @@ import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { StatusPill } from "@/components/status-pill";
 import { TraceTable } from "@/components/trace-table";
+import { listTraces } from "@/lib/trace-store";
 import {
-  dashboardMetrics,
-  getRiskLabel,
-  modelCostBreakdown,
-  traces,
-  trafficSeries,
-} from "@/lib/demo-data";
+  calculateDashboardMetrics,
+  calculateModelCostBreakdown,
+  calculateRiskBuckets,
+  calculateTrafficSeries,
+} from "@/lib/trace-analytics";
 import { formatCurrency, formatMs, formatPercent } from "@/lib/format";
 
-export default function DashboardPage() {
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const traces = await listTraces();
+  const dashboardMetrics = calculateDashboardMetrics(traces);
+  const trafficSeries = calculateTrafficSeries(traces);
+  const modelCostBreakdown = calculateModelCostBreakdown(traces);
   const mostExpensive = [...traces].sort((a, b) => b.costUsd - a.costUsd).slice(0, 3);
-  const highRisk = traces.filter(
-    (trace) => getRiskLabel(trace.hallucinationRisk) === "high",
-  ).length;
-  const mediumRisk = traces.filter(
-    (trace) => getRiskLabel(trace.hallucinationRisk) === "medium",
-  ).length;
-  const lowRisk = traces.length - highRisk - mediumRisk;
+  const riskBuckets = calculateRiskBuckets(traces);
 
   return (
     <>
@@ -62,7 +62,11 @@ export default function DashboardPage() {
         <div className="rounded-md border border-border bg-surface p-4">
           <h2 className="text-lg font-semibold text-ink">Hallucination risk</h2>
           <p className="text-sm text-muted">Risk mix across the sampled traces.</p>
-          <RiskDonut low={lowRisk} medium={mediumRisk} high={highRisk} />
+          <RiskDonut
+            low={riskBuckets.low}
+            medium={riskBuckets.medium}
+            high={riskBuckets.high}
+          />
         </div>
       </section>
 
