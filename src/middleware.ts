@@ -9,6 +9,10 @@ const publicPrefixes = [
 ];
 
 function isPublicPath(pathname: string) {
+  if (pathname === "/") {
+    return true;
+  }
+
   return publicPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
 }
 
@@ -52,4 +56,3 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!.*\\..*).*)", "/api/:path*"],
 };
-

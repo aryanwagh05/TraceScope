@@ -39,7 +39,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
 
-  if (pathname === "/login") {
+  if (pathname === "/" || pathname === "/login") {
     return <>{children}</>;
   }
 
