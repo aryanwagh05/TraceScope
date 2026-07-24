@@ -12,6 +12,7 @@ import {
   FlaskConical,
   Gauge,
   GitCompareArrows,
+  LockKeyhole,
   Settings,
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -37,6 +38,10 @@ export function AppShell({
   ownerName: string;
 }) {
   const pathname = usePathname();
+
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -80,6 +85,13 @@ export function AppShell({
           <p className="text-xs font-medium text-muted">Workspace</p>
           <p className="mt-1 text-sm font-semibold text-ink">{workspaceName}</p>
           <p className="mt-1 text-xs text-muted">{ownerName}</p>
+          <a
+            href="/api/auth/logout"
+            className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-scope-blue"
+          >
+            <LockKeyhole size={13} />
+            Lock console
+          </a>
         </div>
       </aside>
 
@@ -91,9 +103,13 @@ export function AppShell({
             </div>
             <span className="text-sm font-semibold">TraceScope</span>
           </Link>
-          <span className="max-w-[46vw] truncate text-xs font-medium text-muted">
-            {workspaceName}
-          </span>
+          <a
+            href="/api/auth/logout"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-scope-blue"
+          >
+            <LockKeyhole size={14} />
+            Lock
+          </a>
         </div>
         <nav className="mt-3 flex gap-2 overflow-x-auto pb-1">
           {navItems.map((item) => {

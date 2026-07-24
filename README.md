@@ -76,6 +76,15 @@ curl -X POST http://localhost:3000/api/traces \
 Ingestion keys are managed on `/settings`. The default local key is
 `ts_dev_local_key`, and generated keys are stored in `data/settings.json`.
 
+## Console Security
+
+Dashboard routes and internal APIs are protected by a signed HTTP-only session
+cookie. In local development, use `tracescope-local` to unlock the console.
+For production, set `TRACESCOPE_CONSOLE_PASSWORD` and a long random
+`TRACESCOPE_SESSION_SECRET` in the environment. Trace ingestion remains
+available to applications through `POST /api/traces`, but it still requires a
+valid `x-tracescope-key` or bearer token.
+
 ## How Evals Work
 
 Evaluator helpers live in `src/lib/evaluators.ts`. The current gates score groundedness, answer relevance, citation support, JSON/schema validity, safety risk, tool-call correctness, latency budget, and cost budget.
