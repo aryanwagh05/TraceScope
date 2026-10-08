@@ -4,21 +4,24 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "cf:dev": "wrangler dev --config cloudflare/wrangler.local.jsonc",
     "cf:migrate:local": "wrangler d1 migrations apply tracescope --local --config cloudflare/wrangler.local.jsonc",
     "cf:migrate:remote": "wrangler d1 migrations apply tracescope --remote --config cloudflare/wrangler.jsonc",
-    "cf:deploy": "wrangler deploy --config cloudflare/wrangler.jsonc"
+    "cf:deploy": "wrangler deploy --config cloudflare/wrangler.jsonc",
+    "cf:web:build": "opennextjs-cloudflare build",
+    "cf:web:preview": "opennextjs-cloudflare preview",
+    "cf:web:deploy": "opennextjs-cloudflare deploy -- --keep-vars"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.26.0",
-    "next": "15.5.21",
+    "next": "15.5.27",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "recharts": "^3.10.0",
@@ -27,17 +30,22 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261008.1",
     "@eslint/eslintrc": "^3",
+    "@opennextjs/cloudflare": "^1.20.9",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.5.21",
+    "eslint-config-next": "15.5.27",
     "jsdom": "^29.1.1",
     "playwright": "^1.61.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10",
     "wrangler": "^4.148.0"
+  },
+  "overrides": {
+    "postcss": "8.5.29",
+    "sharp": "0.35.5"
   }
 }
