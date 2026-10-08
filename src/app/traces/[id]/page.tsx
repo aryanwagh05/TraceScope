@@ -49,7 +49,7 @@ export default async function TraceDetailPage({
 
       <section className="mt-6 grid metric-grid gap-3">
         {[
-          ["Latency", formatMs(trace.latencyMs), "request wall time"],
+          ["Latency", trace.latencyKnown === false ? "n/a" : formatMs(trace.latencyMs), "request wall time"],
           ["Cost", trace.costKnown === false ? "n/a" : formatCurrency(trace.costUsd), "reported model and eval spend"],
           ["Eval score", trace.evalScoreKnown === false ? "n/a" : formatPercent(trace.evalScore), "heuristic evaluator average"],
           ["Risk", trace.hallucinationRiskKnown === false ? "n/a" : getRiskLabel(trace.hallucinationRisk), "groundedness and citation signal"],

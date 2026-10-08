@@ -5,18 +5,20 @@ export interface CohortSummary {
   label: string;
   traceCount: number;
   quality: number;
+  qualitySampleCount: number;
   avgCost: number;
   costSampleCount: number;
   avgLatency: number;
+  latencySampleCount: number;
   failures: Trace[];
 }
 
 export interface ModelExperimentComparison {
   control: CohortSummary;
   variant: CohortSummary;
-  qualityDelta: number;
+  qualityDelta: number | null;
   costDelta: number | null;
-  latencyDelta: number;
+  latencyDelta: number | null;
   recommendation: string;
 }
 
@@ -28,16 +30,20 @@ function average(values: number[]) {
 
 function summarize(key: string, traces: Trace[]): CohortSummary {
   const costed = traces.filter((trace) => trace.costKnown !== false);
+  const timed = traces.filter((trace) => trace.latencyKnown !== false);
+  const evaluated = traces.filter((trace) => trace.evalScoreKnown !== false);
   return {
     key,
     label: key,
     traceCount: traces.length,
-    quality: average(traces.map((trace) => trace.evalScore)),
+    quality: average(evaluated.map((trace) => trace.evalScore)),
+    qualitySampleCount: evaluated.length,
     avgCost: average(costed.map((trace) => trace.costUsd)),
     costSampleCount: costed.length,
-    avgLatency: average(traces.map((trace) => trace.latencyMs)),
+    avgLatency: average(timed.map((trace) => trace.latencyMs)),
+    latencySampleCount: timed.length,
     failures: traces
-      .filter((trace) => trace.status !== "ok" || trace.evalScore < 0.72)
+      .filter((trace) => trace.status !== "ok" || (trace.evalScoreKnown !== false && trace.evalScore < 0.72))
       .slice(0, 3),
   };
 }
@@ -68,17 +74,19 @@ export function compareModels(
 
   const control = summarize(controlModel, controlTraces);
   const variant = summarize(variantModel, variantTraces);
-  const qualityDelta = percentDelta(control.quality, variant.quality);
+  const qualityDelta = control.qualitySampleCount && variant.qualitySampleCount
+    ? percentDelta(control.quality, variant.quality) : null;
   const costDelta = control.costSampleCount && variant.costSampleCount
     ? percentDelta(control.avgCost, variant.avgCost)
     : null;
-  const latencyDelta = percentDelta(control.avgLatency, variant.avgLatency);
+  const latencyDelta = control.latencySampleCount && variant.latencySampleCount
+    ? percentDelta(control.avgLatency, variant.avgLatency) : null;
   const recommendation =
-    costDelta !== null && qualityDelta >= -2 && costDelta < 0
+    costDelta !== null && qualityDelta !== null && qualityDelta >= -2 && costDelta < 0
       ? `Use ${variantModel} for this workload. Quality is comparable and average cost is lower.`
-      : qualityDelta > 3
+      : qualityDelta !== null && qualityDelta > 3
         ? `Use ${variantModel} where quality matters most; monitor cost and latency.`
-        : `Keep ${controlModel} as the baseline until ${variantModel} has stronger quality or cost evidence.`;
+        : `Keep ${controlModel} as the baseline until ${variantModel} has stronger observed quality and cost evidence.`;
 
   return {
     control,

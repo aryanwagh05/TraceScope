@@ -98,7 +98,7 @@ export default async function DashboardPage() {
                   <p className="font-mono text-xs font-semibold text-scope-blue">{trace.id}</p>
                   <p className="mt-1 text-sm font-medium text-ink">{trace.app}</p>
                   <p className="text-xs text-muted">
-                    {trace.model} | {formatMs(trace.latencyMs)}
+                    {trace.model} | {trace.latencyKnown === false ? "latency n/a" : formatMs(trace.latencyMs)}
                   </p>
                 </div>
                 <div className="text-right">

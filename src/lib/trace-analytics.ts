@@ -15,7 +15,7 @@ export interface DashboardMetric {
 
 export interface TrafficPoint {
   time: string;
-  latency: number;
+  latency: number | null;
   cost: number;
   passRate: number | null;
 }
@@ -88,10 +88,11 @@ export function calculateRiskBuckets(traces: Trace[]): RiskBuckets {
 export function calculateDashboardMetrics(traces: Trace[]): DashboardMetric[] {
   const totalRequests = traces.length;
   const costedTraces = traces.filter((trace) => trace.costKnown !== false);
+  const timedTraces = traces.filter((trace) => trace.latencyKnown !== false);
   const totalCost = costedTraces.reduce((sum, trace) => sum + trace.costUsd, 0);
-  const avgLatency = average(traces.map((trace) => trace.latencyMs));
+  const avgLatency = average(timedTraces.map((trace) => trace.latencyMs));
   const p95Latency = percentile(
-    traces.map((trace) => trace.latencyMs),
+    timedTraces.map((trace) => trace.latencyMs),
     95,
   );
   const errorCount = traces.filter((trace) => trace.status === "error").length;
@@ -110,9 +111,9 @@ export function calculateDashboardMetrics(traces: Trace[]): DashboardMetric[] {
     },
     {
       label: "Avg latency",
-      value: formatMs(Math.round(avgLatency)),
+      value: timedTraces.length ? formatMs(Math.round(avgLatency)) : "n/a",
       delta: "computed",
-      detail: `p95 at ${formatMs(Math.round(p95Latency))}`,
+      detail: timedTraces.length ? `p95 at ${formatMs(Math.round(p95Latency))}` : "Latency not reported",
     },
     {
       label: "Token cost",
@@ -158,7 +159,7 @@ export function calculateTrafficSeries(traces: Trace[]): TrafficPoint[] {
     const bucketHour = Math.floor(hour / 4) * 4;
     const label = `${date.toISOString().slice(0, 10)} ${bucketHour.toString().padStart(2, "0")}:00`;
     const bucket = buckets.get(label) ?? { latency: [], cost: 0, passRate: [] };
-    bucket.latency.push(trace.latencyMs);
+    if (trace.latencyKnown !== false) bucket.latency.push(trace.latencyMs);
     if (trace.costKnown !== false) bucket.cost += trace.costUsd;
     if (trace.evalScoreKnown !== false) bucket.passRate.push(trace.evalScore * 100);
     buckets.set(label, bucket);
@@ -169,7 +170,7 @@ export function calculateTrafficSeries(traces: Trace[]): TrafficPoint[] {
     .slice(-6)
     .map(([time, bucket]) => ({
       time,
-      latency: Math.round(average(bucket.latency)),
+      latency: bucket.latency.length ? Math.round(average(bucket.latency)) : null,
       cost: Number(bucket.cost.toFixed(3)),
       passRate: bucket.passRate.length ? Math.round(average(bucket.passRate)) : null,
     }));

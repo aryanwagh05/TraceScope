@@ -48,7 +48,7 @@ function CohortPanel({
         </div>
         <div>
           <p className="text-xs uppercase text-muted">Quality</p>
-          <p className="mt-1 font-semibold text-ink">{formatPercent(cohort.quality)}</p>
+          <p className="mt-1 font-semibold text-ink">{cohort.qualitySampleCount ? formatPercent(cohort.quality) : "n/a"}</p>
         </div>
         <div>
           <p className="text-xs uppercase text-muted">Avg cost</p>
@@ -56,7 +56,7 @@ function CohortPanel({
         </div>
         <div>
           <p className="text-xs uppercase text-muted">Avg latency</p>
-          <p className="mt-1 font-semibold text-ink">{formatMs(Math.round(cohort.avgLatency))}</p>
+          <p className="mt-1 font-semibold text-ink">{cohort.latencySampleCount ? formatMs(Math.round(cohort.avgLatency)) : "n/a"}</p>
         </div>
       </div>
     </div>
@@ -144,7 +144,7 @@ export default async function ExperimentsPage({
               <div className="border-l border-border pl-3">
                 <p className="text-xs uppercase text-muted">Quality delta</p>
                 <p className="mt-1 text-xl font-semibold">
-                  <Delta value={comparison.qualityDelta} />
+                  {comparison.qualityDelta === null ? "n/a" : <Delta value={comparison.qualityDelta} />}
                 </p>
               </div>
               <div className="border-l border-border pl-3">
@@ -156,7 +156,7 @@ export default async function ExperimentsPage({
               <div className="border-l border-border pl-3">
                 <p className="text-xs uppercase text-muted">Latency delta</p>
                 <p className="mt-1 text-xl font-semibold">
-                  <Delta value={comparison.latencyDelta} invert />
+                  {comparison.latencyDelta === null ? "n/a" : <Delta value={comparison.latencyDelta} invert />}
                 </p>
               </div>
             </div>
@@ -179,7 +179,7 @@ export default async function ExperimentsPage({
                       </p>
                       <p className="mt-1 text-ink">{trace.userInput}</p>
                     </div>
-                    <span className="text-muted">{formatPercent(trace.evalScore)}</span>
+                    <span className="text-muted">{trace.evalScoreKnown === false ? "n/a" : formatPercent(trace.evalScore)}</span>
                   </Link>
                 ))
               ) : (

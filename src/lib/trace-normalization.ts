@@ -54,6 +54,12 @@ export function normalizeTrace(input: TraceInput): Trace {
   ) as EvalResult[];
   const totals = calculateTraceTotals({ spans });
   const evalScore = finiteNumber(input.evalScore, calculateTraceEvalScore({ evalResults }));
+  const costKnown = input.costKnown ?? (typeof input.costUsd === "number" ||
+    Boolean(input.spans?.some((span) => typeof span.costUsd === "number")));
+  const latencyKnown = input.latencyKnown ?? (typeof input.latencyMs === "number" ||
+    Boolean(input.spans?.some((span) => typeof span.latencyMs === "number")));
+  const tokenCountKnown = input.tokenCountKnown ?? (typeof input.tokenCount === "number" ||
+    Boolean(input.spans?.some((span) => typeof span.tokenCount === "number")));
   const evalScoreKnown = input.evalScoreKnown ??
     (input.evalScore !== undefined || evalResults.length > 0);
   const hallucinationRiskKnown = input.hallucinationRiskKnown ??
@@ -67,8 +73,9 @@ export function normalizeTrace(input: TraceInput): Trace {
     id,
     gatewayLogId: input.gatewayLogId,
     gatewayId: input.gatewayId,
-    costKnown: input.costKnown,
-    tokenCountKnown: input.tokenCountKnown,
+    costKnown,
+    latencyKnown,
+    tokenCountKnown,
     evalScoreKnown,
     hallucinationRiskKnown,
     app: nonemptyString(input.app, "Unassigned App"),

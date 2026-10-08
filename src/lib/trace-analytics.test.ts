@@ -55,15 +55,17 @@ describe("trace analytics", () => {
       model: "example-model",
       userInput: "Question",
       finalResponse: "Answer",
-      costKnown: false,
-      tokenCountKnown: false,
     });
     const metrics = calculateDashboardMetrics([trace]);
 
     expect(trace.status).toBe("ok");
+    expect(trace.costKnown).toBe(false);
+    expect(trace.latencyKnown).toBe(false);
+    expect(trace.tokenCountKnown).toBe(false);
     expect(trace.evalScoreKnown).toBe(false);
     expect(trace.hallucinationRiskKnown).toBe(false);
     expect(metrics.find((metric) => metric.label === "Token cost")?.value).toBe("n/a");
+    expect(metrics.find((metric) => metric.label === "Avg latency")?.value).toBe("n/a");
     expect(metrics.find((metric) => metric.label === "Eval pass rate")?.value).toBe("n/a");
     expect(metrics.find((metric) => metric.label === "Hallucination risk")?.value).toBe("n/a");
     expect(calculateRiskBuckets([trace])).toEqual({ low: 0, medium: 0, high: 0 });

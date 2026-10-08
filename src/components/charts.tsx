@@ -26,7 +26,7 @@ const tooltipStyle = {
 export function TrafficChart({
   data,
 }: {
-  data: Array<{ time: string; latency: number; cost: number; passRate: number | null }>;
+  data: Array<{ time: string; latency: number | null; cost: number; passRate: number | null }>;
 }) {
   return (
     <div className="h-72 w-full">

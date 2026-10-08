@@ -58,6 +58,7 @@ export interface Trace {
   gatewayLogId?: string;
   gatewayId?: string;
   costKnown?: boolean;
+  latencyKnown?: boolean;
   tokenCountKnown?: boolean;
   evalScoreKnown?: boolean;
   hallucinationRiskKnown?: boolean;

@@ -2,6 +2,8 @@
 
 TraceScope is an LLM observability console for inspecting model calls, prompts, retrieval, tools, feedback, evaluations, latency, errors, and reported usage. The public landing page is at [trscope-ai.vercel.app](https://trscope-ai.vercel.app); the console requires a workspace password.
 
+**Rollout status:** the Cloudflare backend is implemented and locally verified, but the existing Vercel production deployment still runs the previous version until Cloudflare/Vercel authorization, resource migration, and a production redeploy are completed. The AI Gateway example has not yet been verified against the live account.
+
 ## Architecture
 
 ```mermaid
@@ -24,8 +26,8 @@ The Next.js 15 frontend stays on Vercel to preserve the resume URL and existing 
 
 - Keyed trace ingestion at `POST /v1/traces` or the compatible `POST /api/traces` proxy. Each request is limited to 128 KiB, validated, assigned a trace ID when absent, and tracked as queued, processed, or failed.
 - A Queue consumer normalizes spans and retrieval chunks, computes supported heuristic evaluations when none were supplied, and writes them to D1. Duplicate IDs with the same content are idempotent; conflicting content receives HTTP 409.
-- The protected dashboard, trace explorer/detail, evals, alerts, datasets, experiments, and settings read persisted Cloudflare data. Missing provider cost, token usage, and risk evidence display as unavailable rather than invented zeroes.
-- A limited live example calls `@cf/meta/llama-3.2-1b-instruct` through the Workers AI binding with AI Gateway, records the gateway log ID when provided, and links it to a TraceScope trace. TraceScope spans and heuristic evals are separate from AI Gateway's request/usage/cost logs.
+- The protected dashboard, trace explorer/detail, evals, alerts, datasets, experiments, and settings read persisted Cloudflare data. Missing provider cost, token usage, latency, and risk evidence display as unavailable rather than invented zeroes.
+- An implemented but not yet live-verified example calls `@cf/meta/llama-3.2-1b-instruct` through the Workers AI binding with AI Gateway, records the gateway log ID when provided, and links it to a TraceScope trace. TraceScope spans and heuristic evals are separate from AI Gateway's request/usage/cost logs.
 
 Heuristic relevance uses text overlap, and groundedness/citation support use retrieval text. They are diagnostic signals, not semantic truth or a safety certification. Dataset runs compare cases with **observed** traces; they do not replay the model.
 
@@ -69,7 +71,7 @@ The `default` gateway is created by Cloudflare on the first authenticated Worker
 2. Run `python examples/send-trace.py "What is an AI trace?"`. It submits a real Workers AI request through the gateway; it prints the returned trace ID.
 3. Open Traces. Watch the queued record move to a processed trace, then inspect its model span, gateway log ID when available, latency, supported usage, and heuristic evals.
 4. Check Dashboard request count, trace explorer, Evals, and Settings. Add a dataset case or alert rule if desired. A second model's traces are needed for an experiment comparison.
-5. Submit the same trace ID and payload twice to `/v1/traces`. The second response reports `duplicate: true`, and the dashboard count stays unchanged. Submit a changed payload with the same ID to see HTTP 409.
+5. Submit the same trace ID and payload twice to `/v1/traces`. The second response reports `duplicate: true`, and the dashboard count stays unchanged. Submit a changed payload with the same ID to see HTTP 409. Supply your own stable ID for retryable application requests; when absent, TraceScope assigns a new UUID-based ID.
 6. Redeploy the Worker and reload the console; the D1 trace remains.
 
 An ingestion key is for write-only submission, not console access. The workspace password protects reads and settings changes. The admin token is exclusively for the Vercel server to call the Worker.
@@ -99,4 +101,4 @@ Tests cover payload validation and analytics; run the end-to-end walkthrough aga
 
 ## Resume Bullet
 
-Built TraceScope, an LLM observability console using a Cloudflare Worker, Queues, and D1 to ingest and persist keyed traces and heuristic evaluations; integrated a Workers AI request through AI Gateway and surfaced real latency, errors, and available usage in a protected Next.js dashboard.
+Built TraceScope, an LLM observability console with locally verified keyed Cloudflare Worker ingestion, Queue processing, D1 persistence, and heuristic evaluations; built a protected Next.js dashboard that distinguishes reported telemetry from unavailable usage.

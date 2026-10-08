@@ -37,10 +37,10 @@ function metricValue(metric: string, traces: Trace[]) {
         return scored.length ? average(scored.map((trace) => trace.hallucinationRisk)) : null;
       }
     case "latency_p95_ms":
-      return percentile(
-        traces.map((trace) => trace.latencyMs),
-        95,
-      );
+      {
+        const timed = traces.filter((trace) => trace.latencyKnown !== false);
+        return timed.length ? percentile(timed.map((trace) => trace.latencyMs), 95) : null;
+      }
     case "avg_cost_usd":
       {
         const costed = traces.filter((trace) => trace.costKnown !== false);

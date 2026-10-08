@@ -129,7 +129,7 @@ function evaluatorResults(input: TraceInput, id: string) {
   });
   return results.filter((result) =>
     result.evaluator === "relevance" ||
-    result.evaluator === "latency" ||
+    (result.evaluator === "latency" && input.latencyKnown !== false) ||
     (result.evaluator === "cost" && input.costKnown !== false) ||
     (chunks.length > 0 && ["groundedness", "citation_support"].includes(result.evaluator)),
   );
@@ -140,6 +140,12 @@ async function processTrace(id: string, env: Env) {
     .bind(id).first<StoredTrace>();
   if (!stored || stored.processing_status === "processed") return;
   const input = JSON.parse(stored.payload_json) as TraceInput;
+  input.costKnown ??= typeof input.costUsd === "number" ||
+    Boolean(input.spans?.some((span) => typeof span.costUsd === "number"));
+  input.latencyKnown ??= typeof input.latencyMs === "number" ||
+    Boolean(input.spans?.some((span) => typeof span.latencyMs === "number"));
+  input.tokenCountKnown ??= typeof input.tokenCount === "number" ||
+    Boolean(input.spans?.some((span) => typeof span.tokenCount === "number"));
   if (input.gatewayLogId && (input.costKnown === false || input.tokenCountKnown === false)) {
     try {
       const log = await env.AI.gateway(input.gatewayId ?? "default").getLog(input.gatewayLogId);
