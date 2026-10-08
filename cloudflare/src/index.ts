@@ -169,6 +169,9 @@ async function processTrace(id: string, env: Env) {
       "INSERT OR REPLACE INTO eval_results (trace_id, id, evaluator, score, passed, payload_json) VALUES (?, ?, ?, ?, ?, ?)",
     ).bind(id, item.id, item.evaluator, item.score, item.passed ? 1 : 0, JSON.stringify(item))),
     env.DB.prepare(
+      "INSERT OR REPLACE INTO trace_feedback (trace_id, value, recorded_at) VALUES (?, ?, ?)",
+    ).bind(id, trace.feedback, new Date().toISOString()),
+    env.DB.prepare(
       "UPDATE traces SET payload_json = ?, processing_status = 'processed', error = NULL WHERE id = ?",
     ).bind(JSON.stringify(trace), id),
   ];
@@ -223,7 +226,11 @@ async function adminRoute(request: Request, env: Env, path: string) {
     return response({ error: "Unauthorized." }, 401);
   }
   const method = request.method;
+  if (path === "/admin/capabilities" && method === "GET") {
+    return response({ aiAvailable: Boolean(env.AI) });
+  }
   if (path === "/admin/examples/ai" && method === "POST") {
+    if (!env.AI) return response({ error: "Workers AI binding is not available." }, 503);
     const body = await readJson(request, 2048);
     const question = isObject(body) && typeof body.question === "string" ? body.question.trim() : "";
     if (!question || question.length > 500) return response({ error: "Question must contain 1-500 characters." }, 400);
@@ -404,10 +411,11 @@ const worker = {
       if (path === "/v1/traces" && request.method === "POST") return ingest(request, env);
       if (path === "/v1/examples/ai" && request.method === "POST") {
         if (!(await ingestionKey(request, env))) return response({ error: "Invalid ingestion key." }, 401);
+        const body = await readJson(request, 2048);
         const adminRequest = new Request(new URL("/admin/examples/ai", request.url), {
           method: "POST",
           headers: { authorization: `Bearer ${env.ADMIN_TOKEN}` },
-          body: await request.text(),
+          body: JSON.stringify(body),
         });
         return adminRoute(adminRequest, env, "/admin/examples/ai");
       }

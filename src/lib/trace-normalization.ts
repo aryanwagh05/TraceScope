@@ -54,6 +54,11 @@ export function normalizeTrace(input: TraceInput): Trace {
   ) as EvalResult[];
   const totals = calculateTraceTotals({ spans });
   const evalScore = finiteNumber(input.evalScore, calculateTraceEvalScore({ evalResults }));
+  const evalScoreKnown = input.evalScoreKnown ??
+    (input.evalScore !== undefined || evalResults.length > 0);
+  const hallucinationRiskKnown = input.hallucinationRiskKnown ??
+    (input.hallucinationRisk !== undefined || evalResults.some((result) =>
+      result.evaluator === "groundedness" || result.evaluator === "citation_support"));
   const hallucinationRisk = finiteNumber(
     input.hallucinationRisk,
     calculateTraceHallucinationRisk({ evalResults }),
@@ -64,6 +69,8 @@ export function normalizeTrace(input: TraceInput): Trace {
     gatewayId: input.gatewayId,
     costKnown: input.costKnown,
     tokenCountKnown: input.tokenCountKnown,
+    evalScoreKnown,
+    hallucinationRiskKnown,
     app: nonemptyString(input.app, "Unassigned App"),
     environment: input.environment ?? "dev",
     model: nonemptyString(input.model, "unknown-model"),

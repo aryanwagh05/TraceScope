@@ -59,6 +59,8 @@ export interface Trace {
   gatewayId?: string;
   costKnown?: boolean;
   tokenCountKnown?: boolean;
+  evalScoreKnown?: boolean;
+  hallucinationRiskKnown?: boolean;
   app: string;
   environment: "prod" | "staging" | "dev";
   model: string;

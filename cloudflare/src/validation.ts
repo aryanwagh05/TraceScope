@@ -12,6 +12,15 @@ export function validateTracePayload(value: unknown): string | null {
     }
     if ((value[field] as string).length > 16000) return `${field} is too long.`;
   }
+  if (value.systemPrompt !== undefined && (typeof value.systemPrompt !== "string" || value.systemPrompt.length > 16000)) {
+    return "systemPrompt must be a string of at most 16000 characters.";
+  }
+  if (value.status !== undefined && !["ok", "warning", "error"].includes(String(value.status))) {
+    return "Invalid trace status.";
+  }
+  if (value.feedback !== undefined && !["good", "bad", "none"].includes(String(value.feedback))) {
+    return "feedback must be good, bad, or none.";
+  }
   if (value.id !== undefined && (typeof value.id !== "string" || !/^[a-zA-Z0-9_-]{1,80}$/.test(value.id))) {
     return "id must contain 1-80 letters, digits, hyphens, or underscores.";
   }
@@ -36,6 +45,9 @@ export function validateTracePayload(value: unknown): string | null {
     if (span.status !== undefined && !["ok", "warning", "error"].includes(String(span.status))) {
       return "Invalid span status.";
     }
+    if (span.type !== undefined && !["input", "system", "retrieval", "rerank", "model", "tool", "validation", "eval", "output"].includes(String(span.type))) {
+      return "Invalid span type.";
+    }
     for (const field of ["latencyMs", "tokenCount", "costUsd"]) {
       const number = span[field];
       if (number !== undefined && (typeof number !== "number" || !Number.isFinite(number) || number < 0)) {
@@ -48,9 +60,13 @@ export function validateTracePayload(value: unknown): string | null {
       return "Each retrieval chunk needs a source and excerpt.";
     }
     if (chunk.excerpt.length > 16000) return "Retrieval excerpt is too long.";
+    if (chunk.score !== undefined && (typeof chunk.score !== "number" || !Number.isFinite(chunk.score) || chunk.score < 0 || chunk.score > 1)) {
+      return "Retrieval score must be between 0 and 1.";
+    }
+    if (chunk.cited !== undefined && typeof chunk.cited !== "boolean") return "Retrieval cited must be a boolean.";
   }
   for (const result of (value.evalResults ?? []) as unknown[]) {
-    if (!isObject(result) || typeof result.evaluator !== "string" ||
+    if (!isObject(result) || !["groundedness", "relevance", "citation_support", "schema_validity", "safety", "tool_correctness", "latency", "cost"].includes(String(result.evaluator)) ||
       typeof result.score !== "number" || !Number.isFinite(result.score) || result.score < 0 || result.score > 1) {
       return "Each evaluator result needs an evaluator and score between 0 and 1.";
     }

@@ -17,7 +17,7 @@ export interface TrafficPoint {
   time: string;
   latency: number;
   cost: number;
-  passRate: number;
+  passRate: number | null;
 }
 
 export interface ModelCostPoint {
@@ -76,7 +76,7 @@ export function getRiskLabel(score: number) {
 }
 
 export function calculateRiskBuckets(traces: Trace[]): RiskBuckets {
-  return traces.reduce<RiskBuckets>(
+  return traces.filter((trace) => trace.hallucinationRiskKnown !== false).reduce<RiskBuckets>(
     (buckets, trace) => {
       buckets[getRiskLabel(trace.hallucinationRisk)] += 1;
       return buckets;
@@ -97,7 +97,8 @@ export function calculateDashboardMetrics(traces: Trace[]): DashboardMetric[] {
   const errorCount = traces.filter((trace) => trace.status === "error").length;
   const allEvalResults = traces.flatMap((trace) => trace.evalResults);
   const passedEvalResults = allEvalResults.filter((result) => result.passed).length;
-  const avgRisk = average(traces.map((trace) => trace.hallucinationRisk));
+  const riskTraces = traces.filter((trace) => trace.hallucinationRiskKnown !== false);
+  const avgRisk = average(riskTraces.map((trace) => trace.hallucinationRisk));
   const riskBuckets = calculateRiskBuckets(traces);
 
   return [
@@ -129,17 +130,17 @@ export function calculateDashboardMetrics(traces: Trace[]): DashboardMetric[] {
     },
     {
       label: "Eval pass rate",
-      value: formatPercent(
-        allEvalResults.length ? passedEvalResults / allEvalResults.length : 0,
-      ),
+      value: allEvalResults.length ? formatPercent(passedEvalResults / allEvalResults.length) : "n/a",
       delta: "computed",
       detail: `${passedEvalResults}/${allEvalResults.length} eval checks`,
     },
     {
       label: "Hallucination risk",
-      value: formatPercent(avgRisk),
+      value: riskTraces.length ? formatPercent(avgRisk) : "n/a",
       delta: "computed",
-      detail: `${riskBuckets.medium + riskBuckets.high} medium/high traces`,
+      detail: riskTraces.length
+        ? `${riskBuckets.medium + riskBuckets.high} medium/high of ${riskTraces.length} scored traces`
+        : "No groundedness or citation evaluations",
     },
   ];
 }
@@ -152,23 +153,25 @@ export function calculateTrafficSeries(traces: Trace[]): TrafficPoint[] {
 
   traces.forEach((trace) => {
     const date = new Date(trace.timestamp);
-    const hour = date.getHours();
+    if (!Number.isFinite(date.getTime())) return;
+    const hour = date.getUTCHours();
     const bucketHour = Math.floor(hour / 4) * 4;
-    const label = `${bucketHour.toString().padStart(2, "0")}:00`;
+    const label = `${date.toISOString().slice(0, 10)} ${bucketHour.toString().padStart(2, "0")}:00`;
     const bucket = buckets.get(label) ?? { latency: [], cost: 0, passRate: [] };
     bucket.latency.push(trace.latencyMs);
-    bucket.cost += trace.costUsd;
-    bucket.passRate.push(trace.evalScore * 100);
+    if (trace.costKnown !== false) bucket.cost += trace.costUsd;
+    if (trace.evalScoreKnown !== false) bucket.passRate.push(trace.evalScore * 100);
     buckets.set(label, bucket);
   });
 
   return [...buckets.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
+    .slice(-6)
     .map(([time, bucket]) => ({
       time,
       latency: Math.round(average(bucket.latency)),
       cost: Number(bucket.cost.toFixed(3)),
-      passRate: Math.round(average(bucket.passRate)),
+      passRate: bucket.passRate.length ? Math.round(average(bucket.passRate)) : null,
     }));
 }
 
@@ -212,12 +215,12 @@ export function calculateEvaluatorBreakdown(
   }));
 }
 
-export function calculateTraceStatus(trace: Pick<Trace, "evalScore" | "spans">) {
-  if (trace.spans.some((span) => span.status === "error") || trace.evalScore < 0.6) {
+export function calculateTraceStatus(trace: Pick<Trace, "evalScore" | "evalScoreKnown" | "spans">) {
+  if (trace.spans.some((span) => span.status === "error") || (trace.evalScoreKnown !== false && trace.evalScore < 0.6)) {
     return "error";
   }
 
-  if (trace.spans.some((span) => span.status === "warning") || trace.evalScore < 0.78) {
+  if (trace.spans.some((span) => span.status === "warning") || (trace.evalScoreKnown !== false && trace.evalScore < 0.78)) {
     return "warning";
   }
 

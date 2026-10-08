@@ -47,8 +47,11 @@ async function runExampleAction(
   }
 }
 
-export default function DocsPage() {
+export default async function DocsPage() {
   const enabled = isCloudflareConfigured();
+  const capabilities = enabled
+    ? await cloudflareRequest<{ aiAvailable: boolean }>("/admin/capabilities")
+    : { aiAvailable: false };
   return (
     <>
       <PageHeader
@@ -61,7 +64,7 @@ export default function DocsPage() {
           ["Python live example", pythonSnippet],
           ["TypeScript ingestion", typescriptSnippet],
         ].map(([title, snippet]) => (
-          <article key={title} className="rounded-md border border-border bg-surface">
+          <article key={title} className="min-w-0 rounded-md border border-border bg-surface">
             <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
               <div className="flex items-center gap-2">
                 <TerminalSquare size={18} className="text-scope-blue" />
@@ -69,11 +72,11 @@ export default function DocsPage() {
               </div>
               <CopySnippetButton text={snippet} />
             </div>
-            <pre className="overflow-x-auto p-4 text-xs leading-6 text-ink"><code>{snippet}</code></pre>
+            <pre className="max-w-full overflow-x-auto p-4 text-xs leading-6 text-ink"><code>{snippet}</code></pre>
           </article>
         ))}
       </section>
-      <AiGatewayExample action={runExampleAction} enabled={enabled} />
+      <AiGatewayExample action={runExampleAction} enabled={capabilities.aiAvailable} />
     </>
   );
 }

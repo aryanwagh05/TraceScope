@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seedTraces } from "./demo-data";
+import { normalizeTrace } from "./trace-normalization";
 import {
   calculateDashboardMetrics,
   calculateEvaluatorBreakdown,
@@ -45,5 +46,26 @@ describe("trace analytics", () => {
       medium: 1,
       high: 1,
     });
+  });
+
+  it("does not turn missing provider and retrieval evidence into zero-valued metrics", () => {
+    const trace = normalizeTrace({
+      id: "unknown-metrics",
+      app: "example",
+      model: "example-model",
+      userInput: "Question",
+      finalResponse: "Answer",
+      costKnown: false,
+      tokenCountKnown: false,
+    });
+    const metrics = calculateDashboardMetrics([trace]);
+
+    expect(trace.status).toBe("ok");
+    expect(trace.evalScoreKnown).toBe(false);
+    expect(trace.hallucinationRiskKnown).toBe(false);
+    expect(metrics.find((metric) => metric.label === "Token cost")?.value).toBe("n/a");
+    expect(metrics.find((metric) => metric.label === "Eval pass rate")?.value).toBe("n/a");
+    expect(metrics.find((metric) => metric.label === "Hallucination risk")?.value).toBe("n/a");
+    expect(calculateRiskBuckets([trace])).toEqual({ low: 0, medium: 0, high: 0 });
   });
 });

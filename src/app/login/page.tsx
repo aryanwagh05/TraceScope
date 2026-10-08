@@ -83,11 +83,13 @@ export default async function LoginPage({
             </p>
           </div>
 
-          <p className="text-xs leading-6 text-[#8c9aa1]">
-            Local development password: <span className="font-mono">tracescope-local</span>.
-            Set <span className="font-mono">TRACESCOPE_CONSOLE_PASSWORD</span> and{" "}
-            <span className="font-mono">TRACESCOPE_SESSION_SECRET</span> before deployment.
-          </p>
+          {process.env.NODE_ENV !== "production" ? (
+            <p className="text-xs leading-6 text-[#8c9aa1]">
+              Local development password: <span className="font-mono">tracescope-local</span>.
+              Set <span className="font-mono">TRACESCOPE_CONSOLE_PASSWORD</span> and{" "}
+              <span className="font-mono">TRACESCOPE_SESSION_SECRET</span> before deployment.
+            </p>
+          ) : <span aria-hidden="true" />}
         </div>
 
         <div className="flex items-center border-t border-[#ffffff]/10 bg-[#f7f6f1] p-6 text-ink lg:border-l lg:border-t-0 lg:p-10">

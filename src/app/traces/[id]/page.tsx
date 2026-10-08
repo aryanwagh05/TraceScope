@@ -51,8 +51,8 @@ export default async function TraceDetailPage({
         {[
           ["Latency", formatMs(trace.latencyMs), "request wall time"],
           ["Cost", trace.costKnown === false ? "n/a" : formatCurrency(trace.costUsd), "reported model and eval spend"],
-          ["Eval score", formatPercent(trace.evalScore), "weighted pass rate"],
-          ["Risk", getRiskLabel(trace.hallucinationRisk), "hallucination signal"],
+          ["Eval score", trace.evalScoreKnown === false ? "n/a" : formatPercent(trace.evalScore), "heuristic evaluator average"],
+          ["Risk", trace.hallucinationRiskKnown === false ? "n/a" : getRiskLabel(trace.hallucinationRisk), "groundedness and citation signal"],
         ].map(([label, value, detail]) => (
           <article key={label} className="rounded-md border border-border bg-surface p-4">
             <p className="text-xs font-semibold uppercase text-muted">{label}</p>

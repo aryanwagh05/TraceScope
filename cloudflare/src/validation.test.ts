@@ -28,4 +28,10 @@ describe("trace ingestion validation", () => {
     expect(validateTracePayload({ ...validTrace, spans: Array(129).fill(validTrace.spans[0]) })).toContain("at most 128");
     expect(validateTracePayload({ ...validTrace, evalResults: [{ evaluator: "relevance", score: 2 }] })).toContain("score between 0 and 1");
   });
+
+  it("rejects invalid feedback, span types, and retrieval signals", () => {
+    expect(validateTracePayload({ ...validTrace, feedback: "positive" })).toContain("feedback");
+    expect(validateTracePayload({ ...validTrace, spans: [{ name: "Generate", type: "imaginary" }] })).toContain("span type");
+    expect(validateTracePayload({ ...validTrace, retrievalChunks: [{ source: "doc", excerpt: "text", score: 5 }] })).toContain("Retrieval score");
+  });
 });

@@ -32,7 +32,10 @@ function metricValue(metric: string, traces: Trace[]) {
 
   switch (metric) {
     case "hallucination_risk":
-      return average(traces.map((trace) => trace.hallucinationRisk));
+      {
+        const scored = traces.filter((trace) => trace.hallucinationRiskKnown !== false);
+        return scored.length ? average(scored.map((trace) => trace.hallucinationRisk)) : null;
+      }
     case "latency_p95_ms":
       return percentile(
         traces.map((trace) => trace.latencyMs),
