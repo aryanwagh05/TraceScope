@@ -91,9 +91,11 @@ export default async function AlertsPage() {
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold text-ink">Create alert rule</h2>
           <p className="text-sm text-muted">
-            {firingCount
+            {!rules.length
+              ? "No rules yet. Create one to monitor incoming traces."
+              : firingCount
               ? `${firingCount} rule${firingCount === 1 ? " is" : "s are"} firing on current traces.`
-              : "All enabled rules are below their firing threshold."}
+              : "No rules are currently firing. Rules without matching data are marked separately."}
           </p>
         </div>
 

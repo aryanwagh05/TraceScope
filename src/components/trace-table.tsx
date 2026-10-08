@@ -56,7 +56,7 @@ export function TraceTable({ traces }: { traces: Trace[] }) {
               </td>
               <td className="px-4 py-3 font-mono text-xs text-muted">{trace.model}</td>
               <td className="px-4 py-3">{formatMs(trace.latencyMs)}</td>
-              <td className="px-4 py-3">{formatCurrency(trace.costUsd)}</td>
+              <td className="px-4 py-3">{trace.costKnown === false ? "n/a" : formatCurrency(trace.costUsd)}</td>
               <td className="px-4 py-3">{formatNumber(trace.tokenCount)}</td>
               <td className="px-4 py-3">{formatPercent(trace.evalScore)}</td>
               <td className="px-4 py-3">

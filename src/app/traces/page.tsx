@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { Filter, Search } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { TraceTable } from "@/components/trace-table";
 import { filterTraces, type TraceFilters } from "@/lib/trace-filters";
-import { listTraces } from "@/lib/trace-store";
+import { listPendingIngestions, listTraces, retryIngestion } from "@/lib/trace-store";
 
 export const dynamic = "force-dynamic";
 
@@ -20,12 +21,18 @@ function uniqueSorted(values: string[]) {
   );
 }
 
+async function retryAction(formData: FormData) {
+  "use server";
+  await retryIngestion(String(formData.get("traceId") ?? ""));
+  revalidatePath("/traces");
+}
+
 export default async function TracesPage({
   searchParams,
 }: {
   searchParams: Promise<TraceSearchParams>;
 }) {
-  const traces = await listTraces();
+  const [traces, pending] = await Promise.all([listTraces(), listPendingIngestions()]);
   const params = await searchParams;
   const filters: TraceFilters = {
     query: firstParam(params, "q"),
@@ -54,6 +61,30 @@ export default async function TracesPage({
           </Link>
         }
       />
+
+      {pending.length ? (
+        <section className="mb-5 border-b border-border pb-4">
+          <h2 className="text-sm font-semibold text-ink">Ingestion activity</h2>
+          <div className="mt-2 divide-y divide-border">
+            {pending.map((item) => (
+              <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
+                <div>
+                  <span className="font-mono text-xs text-muted">{item.id}</span>
+                  <span className="ml-3 text-ink">{item.app} / {item.model}</span>
+                  <span className="ml-3 font-semibold text-scope-blue">{item.status}</span>
+                  {item.error ? <p className="text-xs text-scope-red">{item.error}</p> : null}
+                </div>
+                {item.status === "failed" ? (
+                  <form action={retryAction}>
+                    <input type="hidden" name="traceId" value={item.id} />
+                    <button className="text-xs font-semibold text-scope-blue">Retry</button>
+                  </form>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section id="trace-filters" className="mb-4 rounded-md border border-border bg-surface p-3">
         <form className="grid gap-3 lg:grid-cols-[1.5fr_.75fr_.75fr_1fr_auto]" action="/traces">

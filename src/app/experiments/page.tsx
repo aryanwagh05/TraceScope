@@ -52,7 +52,7 @@ function CohortPanel({
         </div>
         <div>
           <p className="text-xs uppercase text-muted">Avg cost</p>
-          <p className="mt-1 font-semibold text-ink">{formatCurrency(cohort.avgCost)}</p>
+          <p className="mt-1 font-semibold text-ink">{cohort.costSampleCount ? formatCurrency(cohort.avgCost) : "n/a"}</p>
         </div>
         <div>
           <p className="text-xs uppercase text-muted">Avg latency</p>
@@ -150,7 +150,7 @@ export default async function ExperimentsPage({
               <div className="border-l border-border pl-3">
                 <p className="text-xs uppercase text-muted">Cost delta</p>
                 <p className="mt-1 text-xl font-semibold">
-                  <Delta value={comparison.costDelta} invert />
+                  {comparison.costDelta === null ? "n/a" : <Delta value={comparison.costDelta} invert />}
                 </p>
               </div>
               <div className="border-l border-border pl-3">

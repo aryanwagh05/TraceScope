@@ -45,3 +45,8 @@ next-env.d.ts
 
 # local trace ingestion store
 /data/*.json
+
+# Cloudflare local state and generated bindings
+/cloudflare/.wrangler/
+/cloudflare/.dev.vars*
+/cloudflare/worker-configuration.d.ts

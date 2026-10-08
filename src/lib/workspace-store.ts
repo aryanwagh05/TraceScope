@@ -3,6 +3,7 @@ import "server-only";
 import { randomBytes } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { cloudflareRequest, isCloudflareConfigured } from "./cloudflare-client";
 import type {
   AlertRule,
   EvalDatasetCase,
@@ -123,6 +124,7 @@ function formString(value: FormDataEntryValue | null, fallback = "") {
 }
 
 export async function getWorkspaceSettings() {
+  if (isCloudflareConfigured()) return cloudflareRequest<WorkspaceSettings>("/admin/settings");
   return readJson<WorkspaceSettings>("settings", defaultSettings);
 }
 
@@ -157,11 +159,23 @@ export async function saveWorkspaceSettings(formData: FormData) {
     ),
   };
 
+  if (isCloudflareConfigured()) {
+    return cloudflareRequest<WorkspaceSettings>("/admin/settings", {
+      method: "PUT",
+      body: JSON.stringify(next),
+    });
+  }
   await writeJson("settings", next);
   return next;
 }
 
 export async function generateIngestionKey(name: string) {
+  if (isCloudflareConfigured()) {
+    return cloudflareRequest<IngestionKey>("/admin/keys", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+  }
   const settings = await getWorkspaceSettings();
   const key: IngestionKey = {
     id: `key-${Date.now().toString(36)}`,
@@ -178,7 +192,20 @@ export async function generateIngestionKey(name: string) {
   return key;
 }
 
+export async function revokeIngestionKey(id: string) {
+  if (isCloudflareConfigured()) {
+    await cloudflareRequest(`/admin/keys/${encodeURIComponent(id)}`, { method: "DELETE" });
+    return;
+  }
+  const settings = await getWorkspaceSettings();
+  await writeJson("settings", {
+    ...settings,
+    ingestionKeys: settings.ingestionKeys.filter((key) => key.id !== id),
+  });
+}
+
 export async function markIngestionKeyUsed(token: string) {
+  if (isCloudflareConfigured()) return;
   const settings = await getWorkspaceSettings();
   const next = {
     ...settings,
@@ -190,6 +217,7 @@ export async function markIngestionKeyUsed(token: string) {
 }
 
 export async function isValidIngestionKey(token: string | null) {
+  if (isCloudflareConfigured()) return false;
   if (!token) {
     return false;
   }
@@ -199,6 +227,7 @@ export async function isValidIngestionKey(token: string | null) {
 }
 
 export async function listAlertRules() {
+  if (isCloudflareConfigured()) return cloudflareRequest<AlertRule[]>("/admin/alert-rules");
   const settings = await getWorkspaceSettings();
   return readJson<AlertRule[]>("alert-rules", defaultAlertRules(settings));
 }
@@ -217,11 +246,18 @@ export async function addAlertRule(formData: FormData) {
     enabled: true,
   };
 
+  if (isCloudflareConfigured()) {
+    return cloudflareRequest<AlertRule>("/admin/alert-rules", {
+      method: "POST",
+      body: JSON.stringify(rule),
+    });
+  }
   await writeJson("alert-rules", [rule, ...rules]);
   return rule;
 }
 
 export async function listEvalCases() {
+  if (isCloudflareConfigured()) return cloudflareRequest<EvalDatasetCase[]>("/admin/eval-cases");
   return readJson<EvalDatasetCase[]>("eval-cases", []);
 }
 
@@ -243,6 +279,12 @@ export async function addEvalCase(input: Omit<EvalDatasetCase, "id" | "createdAt
     createdAt: new Date().toISOString(),
   };
 
+  if (isCloudflareConfigured()) {
+    return cloudflareRequest<EvalDatasetCase>("/admin/eval-cases", {
+      method: "POST",
+      body: JSON.stringify(testCase),
+    });
+  }
   await writeJson("eval-cases", [testCase, ...cases]);
   return testCase;
 }
@@ -259,10 +301,17 @@ export async function addEvalCaseFromForm(formData: FormData) {
 }
 
 export async function listEvalRuns() {
+  if (isCloudflareConfigured()) return cloudflareRequest<EvalRun[]>("/admin/eval-runs");
   return readJson<EvalRun[]>("eval-runs", []);
 }
 
 export async function saveEvalRun(run: EvalRun) {
+  if (isCloudflareConfigured()) {
+    return cloudflareRequest<EvalRun>("/admin/eval-runs", {
+      method: "POST",
+      body: JSON.stringify(run),
+    });
+  }
   const runs = await listEvalRuns();
   await writeJson("eval-runs", [run, ...runs]);
   return run;

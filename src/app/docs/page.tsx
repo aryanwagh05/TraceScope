@@ -1,67 +1,65 @@
+import { revalidatePath } from "next/cache";
 import { TerminalSquare } from "lucide-react";
+import { AiGatewayExample } from "@/components/ai-gateway-example";
 import { CopySnippetButton } from "@/components/copy-snippet-button";
 import { PageHeader } from "@/components/page-header";
+import { cloudflareRequest, isCloudflareConfigured } from "@/lib/cloudflare-client";
 
-const pythonSnippet = `import os
-import requests
+export const dynamic = "force-dynamic";
 
-trace = {
-    "app": "support-bot",
-    "environment": "prod",
-    "model": "gpt-5.6-sol",
-    "userInput": user_message,
-    "systemPrompt": system_prompt,
-    "finalResponse": answer,
-    "tags": ["rag", "customer-support"],
-    "spans": [
-        {"name": "Retrieve chunks", "type": "retrieval", "status": "ok", "latencyMs": 142},
-        {"name": "Generate answer", "type": "model", "status": "ok", "latencyMs": 684, "tokenCount": 1800, "costUsd": 0.024},
-    ],
-    "evalResults": [
-        {"evaluator": "groundedness", "score": 0.91, "passed": True, "notes": "Answer is supported by retrieved context."}
-    ],
-}
+const pythonSnippet = `# In a terminal, set TRACESCOPE_WORKER_URL and TRACESCOPE_API_KEY.
+# Run: python examples/send-trace.py "What is an AI trace?"
+# The script makes a real Workers AI request through AI Gateway
+# and returns the queued TraceScope trace ID.`;
 
-requests.post(
-    "http://localhost:3000/api/traces",
-    json=trace,
-    headers={"x-tracescope-key": os.environ["TRACESCOPE_API_KEY"]},
-    timeout=5,
-)`;
-
-const typescriptSnippet = `export async function answerQuestion(input: string) {
-  const trace = await runInstrumentedWorkflow({
-    app: "docs-qa",
-    environment: "prod",
-    model: "gpt-5.6-sol",
-    tags: ["rag", "customer-facing"],
-  });
-
-  await fetch("/api/traces", {
+const typescriptSnippet = `const response = await fetch(
+  process.env.TRACESCOPE_WORKER_URL + "/v1/examples/ai",
+  {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-tracescope-key": process.env.TRACESCOPE_API_KEY ?? "ts_dev_local_key",
+      "x-tracescope-key": process.env.TRACESCOPE_API_KEY!,
     },
-    body: JSON.stringify(trace),
-  });
+    body: JSON.stringify({ question: "What is an AI trace?" }),
+  },
+);
+if (!response.ok) throw new Error(await response.text());
+const { traceId } = await response.json();`;
 
-  return trace.finalResponse;
-}`;
+async function runExampleAction(
+  _previous: { traceId?: string; answer?: string; gatewayLogId?: string; status?: string; error?: string },
+  formData: FormData,
+) {
+  "use server";
+  const question = String(formData.get("question") ?? "").trim();
+  if (!question || question.length > 500) return { error: "Enter a question under 500 characters." };
+  try {
+    const result = await cloudflareRequest<{
+      traceId: string;
+      answer: string;
+      gatewayLogId?: string;
+      status: string;
+    }>("/admin/examples/ai", { method: "POST", body: JSON.stringify({ question }) });
+    revalidatePath("/traces");
+    return result;
+  } catch {
+    return { error: "The AI Gateway example could not complete. Check the Cloudflare backend and daily limit." };
+  }
+}
 
 export default function DocsPage() {
+  const enabled = isCloudflareConfigured();
   return (
     <>
       <PageHeader
         eyebrow="Integration docs"
         title="Instrument prompts, retrieval, tools, evals, and feedback"
-        description="These examples send OpenTelemetry-style trace and span data to the working local ingestion endpoint."
+        description="Send real trace and span data to the Cloudflare Worker. New traces appear after queue processing."
       />
-
       <section className="grid gap-4 xl:grid-cols-2">
         {[
-          ["Python instrumentation", pythonSnippet],
-          ["TypeScript OpenAI wrapper", typescriptSnippet],
+          ["Python live example", pythonSnippet],
+          ["TypeScript ingestion", typescriptSnippet],
         ].map(([title, snippet]) => (
           <article key={title} className="rounded-md border border-border bg-surface">
             <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
@@ -71,28 +69,11 @@ export default function DocsPage() {
               </div>
               <CopySnippetButton text={snippet} />
             </div>
-            <pre className="overflow-x-auto p-4 text-xs leading-6 text-ink">
-              <code>{snippet}</code>
-            </pre>
+            <pre className="overflow-x-auto p-4 text-xs leading-6 text-ink"><code>{snippet}</code></pre>
           </article>
         ))}
       </section>
-
-      <section className="mt-6 rounded-md border border-border bg-surface p-4">
-        <h2 className="text-lg font-semibold text-ink">OpenTelemetry-inspired schema</h2>
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {[
-            "trace_id links a user request across spans",
-            "span_type separates retrieval, model, tool, validation, and eval work",
-            "attributes stores model, prompt version, tags, source IDs, token counts, and cost",
-            "events records feedback, evaluator failures, retries, and alert matches",
-          ].map((item) => (
-            <p key={item} className="rounded-md border border-border bg-[#fbfaf6] p-3 text-sm leading-6 text-muted">
-              {item}
-            </p>
-          ))}
-        </div>
-      </section>
+      <AiGatewayExample action={runExampleAction} enabled={enabled} />
     </>
   );
 }

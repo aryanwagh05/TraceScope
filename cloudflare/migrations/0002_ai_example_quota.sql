@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS ai_example_runs (
+  day TEXT PRIMARY KEY,
+  count INTEGER NOT NULL
+);

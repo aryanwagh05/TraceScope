@@ -19,6 +19,7 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
       "tracescope-scaffold/**",
+      "cloudflare/.wrangler/**",
     ],
   },
 ];

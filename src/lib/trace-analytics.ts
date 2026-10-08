@@ -87,7 +87,8 @@ export function calculateRiskBuckets(traces: Trace[]): RiskBuckets {
 
 export function calculateDashboardMetrics(traces: Trace[]): DashboardMetric[] {
   const totalRequests = traces.length;
-  const totalCost = traces.reduce((sum, trace) => sum + trace.costUsd, 0);
+  const costedTraces = traces.filter((trace) => trace.costKnown !== false);
+  const totalCost = costedTraces.reduce((sum, trace) => sum + trace.costUsd, 0);
   const avgLatency = average(traces.map((trace) => trace.latencyMs));
   const p95Latency = percentile(
     traces.map((trace) => trace.latencyMs),
@@ -114,9 +115,11 @@ export function calculateDashboardMetrics(traces: Trace[]): DashboardMetric[] {
     },
     {
       label: "Token cost",
-      value: formatCurrency(totalCost),
+      value: costedTraces.length ? formatCurrency(totalCost) : "n/a",
       delta: "computed",
-      detail: `${formatCurrency(totalRequests ? totalCost / totalRequests : 0)} avg request`,
+      detail: costedTraces.length
+        ? `${formatCurrency(totalCost / costedTraces.length)} avg across ${costedTraces.length} costed requests`
+        : "Provider cost not reported",
     },
     {
       label: "Error rate",
@@ -173,6 +176,7 @@ export function calculateModelCostBreakdown(traces: Trace[]): ModelCostPoint[] {
   const buckets = new Map<string, ModelCostPoint>();
 
   traces.forEach((trace) => {
+    if (trace.costKnown === false) return;
     const bucket = buckets.get(trace.model) ?? {
       model: trace.model,
       cost: 0,

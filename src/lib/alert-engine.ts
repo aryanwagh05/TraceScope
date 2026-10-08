@@ -2,7 +2,7 @@ import { calculateDashboardMetrics } from "./trace-analytics";
 import type { AlertRule, Trace } from "./types";
 
 export interface EvaluatedAlertRule extends AlertRule {
-  currentValue: number;
+  currentValue: number | null;
   currentLabel: string;
 }
 
@@ -23,6 +23,7 @@ function percentile(values: number[], percentileValue: number) {
 }
 
 function metricValue(metric: string, traces: Trace[]) {
+  if (!traces.length) return null;
   const evalResults = traces.flatMap((trace) => trace.evalResults);
   const schemaResults = evalResults.filter(
     (result) => result.evaluator === "schema_validity",
@@ -38,13 +39,16 @@ function metricValue(metric: string, traces: Trace[]) {
         95,
       );
     case "avg_cost_usd":
-      return average(traces.map((trace) => trace.costUsd));
+      {
+        const costed = traces.filter((trace) => trace.costKnown !== false);
+        return costed.length ? average(costed.map((trace) => trace.costUsd)) : null;
+      }
     case "schema_failure_rate":
       return schemaResults.length
         ? schemaResults.filter((result) => !result.passed).length / schemaResults.length
-        : 0;
+        : null;
     case "retrieval_quality":
-      return average(retrievalChunks.map((chunk) => chunk.score));
+      return retrievalChunks.length ? average(retrievalChunks.map((chunk) => chunk.score)) : null;
     case "error_rate":
       return traces.length
         ? traces.filter((trace) => trace.status === "error").length / traces.length
@@ -52,9 +56,9 @@ function metricValue(metric: string, traces: Trace[]) {
     case "eval_pass_rate":
       return evalResults.length
         ? evalResults.filter((result) => result.passed).length / evalResults.length
-        : 0;
+        : null;
     default:
-      return 0;
+      return null;
   }
 }
 
@@ -102,15 +106,15 @@ export function evaluateAlertRules(
 ): EvaluatedAlertRule[] {
   return rules.map((rule) => {
     const currentValue = metricValue(rule.metric, traces);
-    const firing = rule.enabled !== false && isTriggered(rule, currentValue);
-    const watching = rule.enabled !== false && !firing && isNearThreshold(rule, currentValue);
+    const firing = currentValue !== null && rule.enabled !== false && isTriggered(rule, currentValue);
+    const watching = currentValue !== null && rule.enabled !== false && !firing && isNearThreshold(rule, currentValue);
 
     return {
       ...rule,
-      status: firing ? "firing" : watching ? "watching" : "healthy",
+      status: currentValue === null ? "insufficient_data" : firing ? "firing" : watching ? "watching" : "healthy",
       lastTriggered: firing ? new Date().toLocaleString("en-US") : rule.lastTriggered,
       currentValue,
-      currentLabel: formatMetric(rule.metric, currentValue),
+      currentLabel: currentValue === null ? "n/a" : formatMetric(rule.metric, currentValue),
     };
   });
 }

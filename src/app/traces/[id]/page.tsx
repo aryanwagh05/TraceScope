@@ -41,7 +41,7 @@ export default async function TraceDetailPage({
         title={trace.id}
         description={`${trace.model} request opened ${formatDateTime(
           trace.timestamp,
-        )} with ${formatNumber(trace.tokenCount)} tokens and ${formatCurrency(trace.costUsd)} cost.`}
+        )} with ${trace.tokenCountKnown === false ? "unreported" : formatNumber(trace.tokenCount)} tokens and ${trace.costKnown === false ? "unreported" : formatCurrency(trace.costUsd)} cost.`}
         action={<StatusPill status={trace.status} />}
       />
 
@@ -50,7 +50,7 @@ export default async function TraceDetailPage({
       <section className="mt-6 grid metric-grid gap-3">
         {[
           ["Latency", formatMs(trace.latencyMs), "request wall time"],
-          ["Cost", formatCurrency(trace.costUsd), "model and eval spend"],
+          ["Cost", trace.costKnown === false ? "n/a" : formatCurrency(trace.costUsd), "reported model and eval spend"],
           ["Eval score", formatPercent(trace.evalScore), "weighted pass rate"],
           ["Risk", getRiskLabel(trace.hallucinationRisk), "hallucination signal"],
         ].map(([label, value, detail]) => (
@@ -61,6 +61,12 @@ export default async function TraceDetailPage({
           </article>
         ))}
       </section>
+
+      {trace.gatewayLogId ? (
+        <p className="mt-4 text-sm text-muted">
+          AI Gateway {trace.gatewayId ?? "default"} log: <code className="font-mono text-ink">{trace.gatewayLogId}</code>
+        </p>
+      ) : null}
 
       <section className="mt-6 grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
         <div className="rounded-md border border-border bg-surface p-4">

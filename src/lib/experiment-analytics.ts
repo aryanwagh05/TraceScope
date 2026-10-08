@@ -6,6 +6,7 @@ export interface CohortSummary {
   traceCount: number;
   quality: number;
   avgCost: number;
+  costSampleCount: number;
   avgLatency: number;
   failures: Trace[];
 }
@@ -14,7 +15,7 @@ export interface ModelExperimentComparison {
   control: CohortSummary;
   variant: CohortSummary;
   qualityDelta: number;
-  costDelta: number;
+  costDelta: number | null;
   latencyDelta: number;
   recommendation: string;
 }
@@ -26,12 +27,14 @@ function average(values: number[]) {
 }
 
 function summarize(key: string, traces: Trace[]): CohortSummary {
+  const costed = traces.filter((trace) => trace.costKnown !== false);
   return {
     key,
     label: key,
     traceCount: traces.length,
     quality: average(traces.map((trace) => trace.evalScore)),
-    avgCost: average(traces.map((trace) => trace.costUsd)),
+    avgCost: average(costed.map((trace) => trace.costUsd)),
+    costSampleCount: costed.length,
     avgLatency: average(traces.map((trace) => trace.latencyMs)),
     failures: traces
       .filter((trace) => trace.status !== "ok" || trace.evalScore < 0.72)
@@ -66,10 +69,12 @@ export function compareModels(
   const control = summarize(controlModel, controlTraces);
   const variant = summarize(variantModel, variantTraces);
   const qualityDelta = percentDelta(control.quality, variant.quality);
-  const costDelta = percentDelta(control.avgCost, variant.avgCost);
+  const costDelta = control.costSampleCount && variant.costSampleCount
+    ? percentDelta(control.avgCost, variant.avgCost)
+    : null;
   const latencyDelta = percentDelta(control.avgLatency, variant.avgLatency);
   const recommendation =
-    qualityDelta >= -2 && costDelta < 0
+    costDelta !== null && qualityDelta >= -2 && costDelta < 0
       ? `Use ${variantModel} for this workload. Quality is comparable and average cost is lower.`
       : qualityDelta > 3
         ? `Use ${variantModel} where quality matters most; monitor cost and latency.`

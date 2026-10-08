@@ -7,7 +7,11 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "cf:dev": "wrangler dev --config cloudflare/wrangler.local.jsonc",
+    "cf:migrate:local": "wrangler d1 migrations apply tracescope --local --config cloudflare/wrangler.local.jsonc",
+    "cf:migrate:remote": "wrangler d1 migrations apply tracescope --remote --config cloudflare/wrangler.jsonc",
+    "cf:deploy": "wrangler deploy --config cloudflare/wrangler.jsonc"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -21,6 +25,7 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261008.1",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
@@ -32,6 +37,7 @@
     "playwright": "^1.61.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "wrangler": "^4.148.0"
   }
 }
