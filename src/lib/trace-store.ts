@@ -3,7 +3,6 @@ import "server-only";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { cloudflareRequest, isCloudflareConfigured } from "./cloudflare-client";
-import { seedTraces } from "./demo-data";
 import { normalizeTrace, type TraceInput } from "./trace-normalization";
 import type { Trace } from "./types";
 
@@ -79,8 +78,3 @@ export async function appendTrace(input: TraceInput) {
   return trace;
 }
 
-export async function resetTraceStore() {
-  if (isCloudflareConfigured()) throw new Error("Reset is only available in local development.");
-  await writeLocalTraces(seedTraces);
-  return seedTraces;
-}
