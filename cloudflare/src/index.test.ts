@@ -47,6 +47,7 @@ function harness() {
     },
   };
   const messages: Array<{ traceId: string }> = [];
+  const deliveries = { acknowledged: 0, retried: 0 };
   let queueAvailable = true;
   const env = {
     DB: db,
@@ -66,10 +67,14 @@ function harness() {
     const next = messages.shift();
     if (!next) return;
     await worker.queue({
-      messages: [{ body: next, ack() {}, retry() {} }],
+      messages: [{
+        body: next,
+        ack() { deliveries.acknowledged += 1; },
+        retry() { deliveries.retried += 1; },
+      }],
     } as never, env as never);
   }
-  return { sqlite, request, admin, drain, messages, setQueueAvailable: (value: boolean) => { queueAvailable = value; } };
+  return { sqlite, request, admin, drain, messages, deliveries, setQueueAvailable: (value: boolean) => { queueAvailable = value; } };
 }
 
 async function createKey(test: ReturnType<typeof harness>) {
@@ -108,6 +113,7 @@ describe("Worker ingestion and D1 persistence", () => {
     const duplicate = await test.request("/v1/traces", "POST", body, headers);
     expect((await duplicate.json() as { duplicate: boolean }).duplicate).toBe(true);
     expect(test.messages).toHaveLength(0);
+    expect(test.deliveries).toEqual({ acknowledged: 1, retried: 0 });
     expect(test.sqlite.prepare("SELECT count(*) AS n FROM traces WHERE processing_status = 'processed'").get()).toMatchObject({ n: 1 });
     expect(test.sqlite.prepare("SELECT count(*) AS n FROM spans").get()).toMatchObject({ n: 1 });
     expect(test.sqlite.prepare("SELECT count(*) AS n FROM eval_results").get()).toMatchObject({ n: 3 });
@@ -138,5 +144,18 @@ describe("Worker ingestion and D1 persistence", () => {
     expect((await test.request("/v1/traces", "POST", traceBody("test-003"), headers)).status).toBe(202);
     await test.drain();
     expect(test.sqlite.prepare("SELECT processing_status FROM traces WHERE id = 'test-003'").get()).toMatchObject({ processing_status: "processed" });
+  });
+
+  it("marks a consumer error failed and asks the queue to retry", async () => {
+    const test = harness();
+    openDatabases.push(test.sqlite);
+    const key = await createKey(test);
+    const headers = { "x-tracescope-key": key, "content-type": "application/json" };
+    expect((await test.request("/v1/traces", "POST", traceBody("test-004"), headers)).status).toBe(202);
+    test.sqlite.prepare("UPDATE traces SET payload_json = '{broken' WHERE id = 'test-004'").run();
+    await test.drain();
+    expect(test.deliveries).toEqual({ acknowledged: 0, retried: 1 });
+    expect(test.sqlite.prepare("SELECT processing_status, error FROM traces WHERE id = 'test-004'").get())
+      .toMatchObject({ processing_status: "failed", error: "Processing failed; queued for retry." });
   });
 });
