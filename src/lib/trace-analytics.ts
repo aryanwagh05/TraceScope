@@ -171,7 +171,7 @@ export function calculateTrafficSeries(traces: Trace[]): TrafficPoint[] {
     .map(([time, bucket]) => ({
       time,
       latency: bucket.latency.length ? Math.round(average(bucket.latency)) : null,
-      cost: Number(bucket.cost.toFixed(3)),
+      cost: bucket.cost,
       passRate: bucket.passRate.length ? Math.round(average(bucket.passRate)) : null,
     }));
 }
@@ -186,7 +186,7 @@ export function calculateModelCostBreakdown(traces: Trace[]): ModelCostPoint[] {
       cost: 0,
       requests: 0,
     };
-    bucket.cost = Number((bucket.cost + trace.costUsd).toFixed(3));
+    bucket.cost += trace.costUsd;
     bucket.requests += 1;
     buckets.set(trace.model, bucket);
   });
@@ -256,7 +256,7 @@ export function calculateTraceTotals(trace: Pick<Trace, "spans">) {
   return trace.spans.reduce(
     (totals, span) => ({
       latencyMs: totals.latencyMs + span.latencyMs,
-      costUsd: Number((totals.costUsd + span.costUsd).toFixed(4)),
+      costUsd: totals.costUsd + span.costUsd,
       tokenCount: totals.tokenCount + span.tokenCount,
     }),
     { latencyMs: 0, costUsd: 0, tokenCount: 0 },

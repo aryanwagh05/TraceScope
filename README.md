@@ -97,7 +97,7 @@ npm test
 npm run build
 ```
 
-The 26 tests cover validation, ingestion, persistence, duplicate delivery, queue retry, and analytics. The Worker was also verified against live D1 and Queues: two real model requests processed, malformed input returned 400, an invalid key returned 401, an oversized payload returned 413, and traces survived a Worker redeploy. The protected Vercel console still needs a production end-to-end check after frontend deployment.
+The 27 tests cover validation, ingestion, persistence, duplicate delivery, queue retry, and analytics. The Worker was also verified against live D1 and Queues: two real model requests processed, malformed input returned 400, an invalid key returned 401, an oversized payload returned 413, and traces survived a Worker redeploy. The protected Vercel console still needs a production end-to-end check after frontend deployment.
 
 ## Resume Bullet
 

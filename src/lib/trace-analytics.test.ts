@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seedTraces } from "./demo-data";
+import { formatCurrency } from "./format";
 import { normalizeTrace } from "./trace-normalization";
 import {
   calculateDashboardMetrics,
@@ -7,6 +8,7 @@ import {
   calculateModelCostBreakdown,
   calculateRiskBuckets,
   calculateTrafficSeries,
+  calculateTraceTotals,
 } from "./trace-analytics";
 
 describe("trace analytics", () => {
@@ -24,6 +26,22 @@ describe("trace analytics", () => {
       model: "gpt-5.6-sol",
       requests: 2,
     });
+  });
+
+  it("keeps small reported costs visible through totals and charts", () => {
+    const trace = {
+      ...seedTraces[0],
+      costUsd: 0.000013,
+      costKnown: true,
+      spans: [{ ...seedTraces[0].spans[0], costUsd: 0.000013 }],
+    };
+
+    expect(formatCurrency(trace.costUsd)).toBe("$0.000013");
+    expect(calculateTraceTotals(trace).costUsd).toBe(0.000013);
+    expect(calculateModelCostBreakdown([trace])[0].cost).toBe(0.000013);
+    expect(calculateTrafficSeries([trace])[0].cost).toBe(0.000013);
+    expect(calculateDashboardMetrics([trace]).find((metric) => metric.label === "Token cost")?.value)
+      .toBe("$0.000013");
   });
 
   it("groups traffic by timestamp buckets", () => {

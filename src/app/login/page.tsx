@@ -83,7 +83,7 @@ export default async function LoginPage({
             </p>
           </div>
 
-          {process.env.NODE_ENV !== "production" ? (
+          {process.env.NODE_ENV !== "production" && !process.env.TRACESCOPE_CONSOLE_PASSWORD?.trim() ? (
             <p className="text-xs leading-6 text-[#8c9aa1]">
               Local development password: <span className="font-mono">tracescope-local</span>.
               Set <span className="font-mono">TRACESCOPE_CONSOLE_PASSWORD</span> and{" "}

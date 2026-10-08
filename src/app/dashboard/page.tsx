@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Production overview"
+        eyebrow="Workspace overview"
         title="LLM telemetry without the hand-waving"
         description="Monitor traces, RAG quality, model cost, latency, evaluator drift, schema failures, and user feedback from one engineering console."
         action={
