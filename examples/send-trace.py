@@ -13,7 +13,11 @@ body = json.dumps({"question": question}).encode("utf-8")
 request = urllib.request.Request(
     f"{worker_url}/v1/examples/ai",
     data=body,
-    headers={"content-type": "application/json", "x-tracescope-key": api_key},
+    headers={
+        "content-type": "application/json",
+        "x-tracescope-key": api_key,
+        "user-agent": "TraceScope-example/1.0",
+    },
     method="POST",
 )
 

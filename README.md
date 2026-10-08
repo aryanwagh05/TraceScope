@@ -2,7 +2,7 @@
 
 TraceScope is an LLM observability console for inspecting model calls, prompts, retrieval, tools, feedback, evaluations, latency, errors, and reported usage. The public landing page is at [trscope-ai.vercel.app](https://trscope-ai.vercel.app); the console requires a workspace password.
 
-**Rollout status:** the Cloudflare backend is implemented and locally verified, but the existing Vercel production deployment still runs the previous version until Cloudflare/Vercel authorization, resource migration, and a production redeploy are completed. The AI Gateway example has not yet been verified against the live account.
+**Rollout status:** the Cloudflare Worker is live at [tracescope-api.aryan-wagh05.workers.dev](https://tracescope-api.aryan-wagh05.workers.dev/health) with D1, Queues, and a verified Workers AI request through AI Gateway. The existing Vercel production deployment still runs the previous frontend version; its server-only environment variables and redeploy are pending Vercel access. The resume URL remains available but does not yet show Cloudflare-backed console data.
 
 ## Architecture
 
@@ -27,7 +27,7 @@ The Next.js 15 frontend stays on Vercel to preserve the resume URL and existing 
 - Keyed trace ingestion at `POST /v1/traces` or the compatible `POST /api/traces` proxy. Each request is limited to 128 KiB, validated, assigned a trace ID when absent, and tracked as queued, processed, or failed.
 - A Queue consumer normalizes spans and retrieval chunks, computes supported heuristic evaluations when none were supplied, and writes them to D1. Duplicate IDs with the same content are idempotent; conflicting content receives HTTP 409.
 - The protected dashboard, trace explorer/detail, evals, alerts, datasets, experiments, and settings read persisted Cloudflare data. Missing provider cost, token usage, latency, and risk evidence display as unavailable rather than invented zeroes.
-- An implemented but not yet live-verified example calls `@cf/meta/llama-3.2-1b-instruct` through the Workers AI binding with AI Gateway, records the gateway log ID when provided, and links it to a TraceScope trace. TraceScope spans and heuristic evals are separate from AI Gateway's request/usage/cost logs.
+- The live example calls `@cf/meta/llama-3.2-1b-instruct` through the Workers AI binding with AI Gateway, records the gateway log ID, and links it to a TraceScope trace. A live request returned 117 tokens and a gateway cost of about $0.00001324; these values came from the gateway log, not a hard-coded estimate. TraceScope spans and heuristic evals are separate from AI Gateway's request/usage/cost logs.
 
 Heuristic relevance uses text overlap, and groundedness/citation support use retrieval text. They are diagnostic signals, not semantic truth or a safety certification. Dataset runs compare cases with **observed** traces; they do not replay the model.
 
@@ -59,7 +59,7 @@ Deploy in this order:
 
 1. Authenticate Wrangler to the intended Cloudflare account. Check plan and usage before creating resources. Run `npx wrangler d1 create tracescope --config cloudflare/wrangler.jsonc` and `npx wrangler queues create tracescope-traces --config cloudflare/wrangler.jsonc`.
 2. Put the returned D1 database ID in **both** Wrangler configs. Run `npm run cf:migrate:remote`. Migrations live in `cloudflare/migrations`.
-3. Set a fresh random `ADMIN_TOKEN` with `npx wrangler secret put ADMIN_TOKEN --config cloudflare/wrangler.jsonc`, then run `npm run cf:deploy`. Do not use a previously published password or ingestion key.
+3. Run `npm run cf:deploy`, then set a fresh random `ADMIN_TOKEN` with `npx wrangler secret put ADMIN_TOKEN --config cloudflare/wrangler.jsonc`. Wrangler deploys a new Worker version when adding the secret. Do not use a previously published password or ingestion key.
 4. Set Vercel server-only environment variables `TRACESCOPE_WORKER_URL`, `TRACESCOPE_ADMIN_TOKEN` (same value as the Worker secret), `TRACESCOPE_CONSOLE_PASSWORD`, and `TRACESCOPE_SESSION_SECRET`. Do **not** use a `NEXT_PUBLIC_` prefix. Redeploy the existing Vercel project, keeping its current domain.
 5. Open Settings on the deployed console, create a fresh ingestion key, and revoke any old production keys. Rotate the console password and session secret if either was previously exposed.
 
@@ -97,8 +97,8 @@ npm test
 npm run build
 ```
 
-Tests cover payload validation and analytics; run the end-to-end walkthrough against the local Worker and deployed site for D1/Queue integration.
+The 26 tests cover validation, ingestion, persistence, duplicate delivery, queue retry, and analytics. The Worker was also verified against live D1 and Queues: two real model requests processed, malformed input returned 400, an invalid key returned 401, an oversized payload returned 413, and traces survived a Worker redeploy. The protected Vercel console still needs a production end-to-end check after frontend deployment.
 
 ## Resume Bullet
 
-Built TraceScope, an LLM observability console with locally verified keyed Cloudflare Worker ingestion, Queue processing, D1 persistence, and heuristic evaluations; built a protected Next.js dashboard that distinguishes reported telemetry from unavailable usage.
+Built TraceScope's Cloudflare-backed LLM observability pipeline with keyed Worker ingestion, asynchronous Queue processing, D1 persistence, and AI Gateway correlation; built a protected Next.js console that distinguishes reported telemetry from unavailable usage. The hosted console migration is pending.

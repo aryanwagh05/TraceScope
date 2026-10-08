@@ -8,7 +8,7 @@
     {
       "binding": "DB",
       "database_name": "tracescope",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "database_id": "cbacc83c-0ef2-4842-b02c-2d659b33241e",
       "migrations_dir": "migrations"
     }
   ],
