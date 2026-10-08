@@ -111,7 +111,7 @@ async function ingestionKey(request: Request, env: Env) {
   return key;
 }
 
-function evaluatorResults(input: TraceInput, id: string) {
+function evaluatorResults(input: TraceInput, id: string, settings: WorkspaceSettings) {
   if (input.status === "error") return [];
   if (Array.isArray(input.evalResults) && input.evalResults.length) return input.evalResults;
   const chunks = Array.isArray(input.retrievalChunks) ? input.retrievalChunks : [];
@@ -126,11 +126,18 @@ function evaluatorResults(input: TraceInput, id: string) {
     actualToolNames: spans.filter((span) => span.type === "tool").map((span) => span.name),
     latencyMs: input.latencyMs ?? spans.reduce((sum, span) => sum + (span.latencyMs ?? 0), 0),
     costUsd: input.costUsd ?? spans.reduce((sum, span) => sum + (span.costUsd ?? 0), 0),
+    maxLatencyMs: settings.latencyP95Ms,
+    maxCostUsd: settings.avgCostUsd,
+    groundednessThreshold: settings.groundednessMin,
+    citationSupportThreshold: settings.citationSupportMin,
+    schemaValidityThreshold: settings.schemaValidityMin,
+    schemaValid: input.schemaValid,
   });
   return results.filter((result) =>
     result.evaluator === "relevance" ||
     (result.evaluator === "latency" && input.latencyKnown !== false) ||
     (result.evaluator === "cost" && input.costKnown !== false) ||
+    (result.evaluator === "schema_validity" && typeof input.schemaValid === "boolean") ||
     (chunks.length > 0 && ["groundedness", "citation_support"].includes(result.evaluator)),
   );
 }
@@ -163,7 +170,12 @@ async function processTrace(id: string, env: Env) {
       // Gateway logs can arrive after the model response; retain an honest unknown value.
     }
   }
-  const trace = normalizeTrace({ ...input, evalResults: evaluatorResults(input, id) });
+  const storedSettings = await env.DB.prepare("SELECT payload_json FROM workspace_settings WHERE id = 1")
+    .first<{ payload_json: string }>();
+  const settings = storedSettings
+    ? { ...defaultSettings, ...JSON.parse(storedSettings.payload_json) as WorkspaceSettings }
+    : defaultSettings;
+  const trace = normalizeTrace({ ...input, evalResults: evaluatorResults(input, id, settings) });
   const statements = [
     ...trace.spans.map((span) => env.DB.prepare(
       "INSERT OR REPLACE INTO spans (trace_id, id, type, started_at, payload_json) VALUES (?, ?, ?, ?, ?)",
@@ -352,6 +364,21 @@ async function adminRoute(request: Request, env: Env, path: string) {
       const value = await readJson(request, 8192);
       if (!isObject(value)) return response({ error: "Expected settings object." }, 400);
       const next = { ...defaultSettings, ...value, ingestionKeys: [] };
+      if (typeof next.workspaceName !== "string" || !next.workspaceName.trim() || next.workspaceName.length > 80 ||
+        typeof next.ownerName !== "string" || !next.ownerName.trim() || next.ownerName.length > 80) {
+        return response({ error: "Workspace and owner names must contain 1-80 characters." }, 400);
+      }
+      const numericRanges: Record<string, [number, number]> = {
+        groundednessMin: [0, 1], citationSupportMin: [0, 1], schemaValidityMin: [0, 1],
+        latencyP95Ms: [1, 600000], avgCostUsd: [0.00000001, 100],
+        hallucinationRiskMax: [0, 1], schemaFailureRateMax: [0, 1], retrievalQualityMin: [0, 1],
+      };
+      for (const [field, [minimum, maximum]] of Object.entries(numericRanges)) {
+        const number = next[field as keyof typeof next];
+        if (typeof number !== "number" || !Number.isFinite(number) || number < minimum || number > maximum) {
+          return response({ error: `${field} must be between ${minimum} and ${maximum}.` }, 400);
+        }
+      }
       await env.DB.prepare("INSERT INTO workspace_settings (id, payload_json) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET payload_json = excluded.payload_json")
         .bind(JSON.stringify(next)).run();
       return response({ ...next, ingestionKeys: await listKeys(env.DB) });

@@ -15,6 +15,9 @@ export function validateTracePayload(value: unknown): string | null {
   if (value.systemPrompt !== undefined && (typeof value.systemPrompt !== "string" || value.systemPrompt.length > 16000)) {
     return "systemPrompt must be a string of at most 16000 characters.";
   }
+  if (value.schemaValid !== undefined && typeof value.schemaValid !== "boolean") {
+    return "schemaValid must be a boolean.";
+  }
   if (value.status !== undefined && !["ok", "warning", "error"].includes(String(value.status))) {
     return "Invalid trace status.";
   }

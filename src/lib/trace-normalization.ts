@@ -6,7 +6,7 @@ import {
 } from "./trace-analytics";
 import type { EvalResult, RetrievalChunk, Span, Trace } from "./types";
 
-export type TraceInput = Partial<Omit<Trace, "id">> & { id?: string };
+export type TraceInput = Partial<Omit<Trace, "id">> & { id?: string; schemaValid?: boolean };
 
 function finiteNumber(value: unknown, fallback = 0) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;

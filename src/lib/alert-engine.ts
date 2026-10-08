@@ -1,4 +1,5 @@
 import { calculateDashboardMetrics } from "./trace-analytics";
+import { formatCurrency } from "./format";
 import type { AlertRule, Trace } from "./types";
 
 export interface EvaluatedAlertRule extends AlertRule {
@@ -71,7 +72,7 @@ function formatMetric(metric: string, value: number) {
   }
 
   if (metric.endsWith("_usd")) {
-    return `$${value.toFixed(3)}`;
+    return formatCurrency(value);
   }
 
   if (metric.endsWith("_ms")) {
@@ -115,7 +116,6 @@ export function evaluateAlertRules(
     return {
       ...rule,
       status: currentValue === null ? "insufficient_data" : firing ? "firing" : watching ? "watching" : "healthy",
-      lastTriggered: firing ? new Date().toLocaleString("en-US") : rule.lastTriggered,
       currentValue,
       currentLabel: currentValue === null ? "n/a" : formatMetric(rule.metric, currentValue),
     };

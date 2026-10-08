@@ -62,6 +62,17 @@ function defaultAlertRules(settings: WorkspaceSettings): AlertRule[] {
       enabled: true,
     },
     {
+      id: "rule-average-cost",
+      name: "Average request cost",
+      metric: "avg_cost_usd",
+      operator: ">",
+      threshold: String(settings.avgCostUsd),
+      severity: "warning",
+      status: "healthy",
+      lastTriggered: "Never",
+      enabled: true,
+    },
+    {
       id: "rule-schema-failure",
       name: "JSON schema failure rate",
       metric: "schema_failure_rate",
@@ -227,9 +238,13 @@ export async function isValidIngestionKey(token: string | null) {
 }
 
 export async function listAlertRules() {
-  if (isCloudflareConfigured()) return cloudflareRequest<AlertRule[]>("/admin/alert-rules");
   const settings = await getWorkspaceSettings();
-  return readJson<AlertRule[]>("alert-rules", defaultAlertRules(settings));
+  const defaults = defaultAlertRules(settings);
+  const saved = isCloudflareConfigured()
+    ? await cloudflareRequest<AlertRule[]>("/admin/alert-rules")
+    : await readJson<AlertRule[]>("alert-rules", []);
+  const defaultIds = new Set(defaults.map((rule) => rule.id));
+  return [...defaults, ...saved.filter((rule) => !defaultIds.has(rule.id))];
 }
 
 export async function addAlertRule(formData: FormData) {

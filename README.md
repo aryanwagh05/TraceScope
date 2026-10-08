@@ -29,7 +29,7 @@ The Next.js 15 frontend stays on Vercel to preserve the resume URL and existing 
 - The protected dashboard, trace explorer/detail, evals, alerts, datasets, experiments, and settings read persisted Cloudflare data. Missing provider cost, token usage, latency, and risk evidence display as unavailable rather than invented zeroes.
 - The live example calls `@cf/meta/llama-3.2-1b-instruct` through the Workers AI binding with AI Gateway, records the gateway log ID, and links it to a TraceScope trace. A live request returned 117 tokens and a gateway cost of about $0.00001324; these values came from the gateway log, not a hard-coded estimate. TraceScope spans and heuristic evals are separate from AI Gateway's request/usage/cost logs.
 
-Heuristic relevance uses text overlap, and groundedness/citation support use retrieval text. They are diagnostic signals, not semantic truth or a safety certification. Dataset runs compare cases with **observed** traces; they do not replay the model.
+Heuristic relevance uses text overlap, and groundedness/citation support use retrieval text. They are diagnostic signals, not semantic truth or a safety certification. Saved workspace budgets affect newly processed heuristic evaluations and derived alert rules; they do not rewrite historical eval results. Dataset runs compare cases with **observed** traces; they do not replay the model or count a promoted source failure as its own regression pass.
 
 ## Local Development
 
@@ -97,7 +97,7 @@ npm test
 npm run build
 ```
 
-The 27 tests cover validation, ingestion, persistence, duplicate delivery, queue retry, and analytics. The Worker was also verified against live D1 and Queues: two real model requests processed, malformed input returned 400, an invalid key returned 401, an oversized payload returned 413, and traces survived a Worker redeploy. The protected Vercel console still needs a production end-to-end check after frontend deployment.
+The 29 tests cover validation, ingestion, persistence, duplicate delivery, queue retry, workspace budgets, dataset matching, and analytics. The Worker was also verified against live D1 and Queues: two real model requests processed, malformed input returned 400, an invalid key returned 401, an oversized payload returned 413, and traces survived a Worker redeploy. The protected Vercel console still needs a production end-to-end check after frontend deployment.
 
 ## Resume Bullet
 

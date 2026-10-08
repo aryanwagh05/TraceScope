@@ -12,6 +12,9 @@ export interface EvaluatorInput {
   costUsd: number;
   maxLatencyMs?: number;
   maxCostUsd?: number;
+  groundednessThreshold?: number;
+  citationSupportThreshold?: number;
+  schemaValidityThreshold?: number;
   schemaValid?: boolean;
   safetyFlags?: string[];
 }
@@ -136,6 +139,7 @@ export function runEvaluators(input: EvaluatorInput): EvalResult[] {
       "groundedness",
       scoreGroundedness(input),
       "Checks whether the answer can be supported by retrieved context.",
+      input.groundednessThreshold,
     ),
     toResult(
       input.traceId,
@@ -148,12 +152,14 @@ export function runEvaluators(input: EvaluatorInput): EvalResult[] {
       "citation_support",
       scoreCitationSupport(input),
       "Verifies cited sources appear in the retrieved context.",
+      input.citationSupportThreshold,
     ),
     toResult(
       input.traceId,
       "schema_validity",
       input.schemaValid === false ? 0 : 1,
       "Validates structured output against the expected response schema.",
+      input.schemaValidityThreshold,
     ),
     toResult(input.traceId, "safety", safetyScore, "Flags unsafe or toxic output risk."),
     toResult(

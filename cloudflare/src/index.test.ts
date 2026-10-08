@@ -158,4 +158,30 @@ describe("Worker ingestion and D1 persistence", () => {
     expect(test.sqlite.prepare("SELECT processing_status, error FROM traces WHERE id = 'test-004'").get())
       .toMatchObject({ processing_status: "failed", error: "Processing failed; queued for retry." });
   });
+
+  it("uses persisted workspace budgets for newly processed evaluations", async () => {
+    const test = harness();
+    openDatabases.push(test.sqlite);
+    const initial = await test.admin("/admin/settings");
+    const settings = await initial.json() as Record<string, unknown>;
+    expect((await test.admin("/admin/settings", "PUT", JSON.stringify({
+      ...settings, latencyP95Ms: 10, avgCostUsd: 0.0001,
+    }))).status).toBe(200);
+    expect((await test.admin("/admin/settings", "PUT", JSON.stringify({
+      ...settings, latencyP95Ms: 0,
+    }))).status).toBe(400);
+
+    const key = await createKey(test);
+    const body = JSON.stringify({ ...JSON.parse(traceBody("budget-001")), schemaValid: false });
+    expect((await test.request("/v1/traces", "POST", body, {
+      "x-tracescope-key": key, "content-type": "application/json",
+    })).status).toBe(202);
+    await test.drain();
+    const results = test.sqlite.prepare("SELECT evaluator, passed, payload_json FROM eval_results WHERE trace_id = ?")
+      .all("budget-001") as Array<{ evaluator: string; passed: number; payload_json: string }>;
+    expect(results.find((result) => result.evaluator === "latency")?.passed).toBe(0);
+    expect(results.find((result) => result.evaluator === "cost")?.passed).toBe(0);
+    expect(results.find((result) => result.evaluator === "schema_validity")?.passed).toBe(0);
+    expect(results.find((result) => result.evaluator === "latency")?.payload_json).toContain("Budget: 10ms");
+  });
 });

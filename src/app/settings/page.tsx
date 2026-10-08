@@ -74,7 +74,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="Workspace settings"
         title="Production controls for AI teams"
-        description="These settings drive ingestion authorization, alert thresholds, and the quality budgets shown across the app."
+        description="Save workspace identity and quality budgets. Budgets shape new heuristic evaluations and the workspace rules shown in Alerts; ingestion keys are managed below."
       />
 
       <section className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
