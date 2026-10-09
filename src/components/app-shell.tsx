@@ -7,12 +7,12 @@ import {
   Activity,
   Bell,
   BookOpen,
-  Braces,
   Database,
   FlaskConical,
   Gauge,
   GitCompareArrows,
   LockKeyhole,
+  Radar,
   Settings,
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -46,14 +46,12 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <aside className="fixed left-0 top-0 z-30 hidden h-screen w-64 border-r border-border bg-[#fbfaf6] px-4 py-5 lg:block">
-        <Link href="/dashboard" className="mb-8 flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-md bg-ink text-[#ffffff]">
-            <Braces size={22} strokeWidth={1.8} />
-          </div>
-          <div>
-            <p className="text-sm font-semibold uppercase text-muted">TraceScope</p>
-            <p className="text-xs text-muted">LLM reliability console</p>
-          </div>
+        <Link href="/dashboard" className="mb-9 flex items-center gap-3 px-2 py-1">
+          <Radar size={28} strokeWidth={1.55} className="shrink-0 text-scope-blue" aria-hidden="true" />
+          <span className="grid gap-0.5">
+            <span className="text-[17px] font-semibold leading-5 text-ink">TraceScope</span>
+            <span className="text-[11px] leading-4 text-muted">LLM observability</span>
+          </span>
         </Link>
 
         <nav className="space-y-1">
@@ -97,11 +95,9 @@ export function AppShell({
 
       <header className="sticky top-0 z-20 border-b border-border bg-[#fbfaf6]/95 px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-md bg-ink text-[#ffffff]">
-              <Braces size={20} strokeWidth={1.8} />
-            </div>
-            <span className="text-sm font-semibold">TraceScope</span>
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <Radar size={24} strokeWidth={1.6} className="shrink-0 text-scope-blue" aria-hidden="true" />
+            <span className="text-[15px] font-semibold text-ink">TraceScope</span>
           </Link>
           <a
             href="/api/auth/logout"
