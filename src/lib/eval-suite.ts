@@ -9,21 +9,18 @@ function textTokens(value: string) {
 }
 
 function scoreTraceMatch(testCase: EvalDatasetCase, trace: Trace) {
-  if (testCase.promotedFromTrace === trace.id) {
-    return 1;
-  }
-
-  const caseTokens = new Set(textTokens(`${testCase.input} ${testCase.area}`));
-  const traceText = `${trace.userInput} ${trace.finalResponse} ${trace.tags.join(" ")}`;
-  const traceTokens = new Set(textTokens(traceText));
+  const caseTokens = new Set(textTokens(testCase.input));
+  const traceTokens = new Set(textTokens(trace.userInput));
   const matches = [...caseTokens].filter((token) => traceTokens.has(token)).length;
 
-  return caseTokens.size ? matches / caseTokens.size : 0;
+  return caseTokens.size && traceTokens.size
+    ? matches / Math.max(caseTokens.size, traceTokens.size)
+    : 0;
 }
 
 function scoreExpectedSignals(testCase: EvalDatasetCase, trace: Trace) {
   if (testCase.expectedSignals.length === 0) {
-    return trace.evalScore;
+    return trace.evalScoreKnown === false ? 0 : trace.evalScore;
   }
 
   const searchable = [
@@ -40,7 +37,7 @@ function scoreExpectedSignals(testCase: EvalDatasetCase, trace: Trace) {
     searchable.includes(signal.toLowerCase()),
   ).length;
 
-  return Math.max(trace.evalScore, matches / testCase.expectedSignals.length);
+  return matches / testCase.expectedSignals.length;
 }
 
 export function suggestEvalCasesFromTraces(
@@ -74,20 +71,27 @@ export function suggestEvalCasesFromTraces(
 
 export function runEvalSuite(cases: EvalDatasetCase[], traces: Trace[]): EvalRun {
   const results = cases.map((testCase) => {
+    const source = traces.find((trace) => trace.id === testCase.promotedFromTrace);
+    const promotedAt = Date.parse(testCase.createdAt ?? source?.timestamp ?? "");
     const matchedTrace = [...traces]
+      .filter((trace) => trace.id !== testCase.promotedFromTrace &&
+        (!testCase.promotedFromTrace || !Number.isFinite(promotedAt) || Date.parse(trace.timestamp) > promotedAt))
       .map((trace) => ({ trace, match: scoreTraceMatch(testCase, trace) }))
+      .filter((candidate) => candidate.match > 0.15)
       .sort((a, b) => b.match - a.match)[0];
     const score = matchedTrace ? scoreExpectedSignals(testCase, matchedTrace.trace) : 0;
-    const passed = Boolean(matchedTrace && matchedTrace.match > 0.15 && score >= 0.72);
+    const passed = Boolean(matchedTrace && score >= 0.72);
 
     return {
       caseId: testCase.id,
-      traceId: matchedTrace?.match ? matchedTrace.trace.id : undefined,
+      traceId: matchedTrace?.trace.id,
       passed,
       score: Number(score.toFixed(2)),
       notes: matchedTrace
         ? `Matched ${matchedTrace.trace.id} with ${(matchedTrace.match * 100).toFixed(0)}% input overlap.`
-        : "No matching trace was found.",
+        : testCase.promotedFromTrace
+          ? "No newer comparable trace was found; the source failure is not a regression pass."
+          : "No matching trace was found.",
     };
   });
 

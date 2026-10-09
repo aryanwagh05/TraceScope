@@ -13,13 +13,14 @@ export function MetricCard({
 }) {
   const positive = delta.startsWith("+");
   const negative = delta.startsWith("-");
+  const showDelta = positive || negative;
   const DeltaIcon = positive ? ArrowUpRight : negative ? ArrowDownRight : Minus;
 
   return (
     <article className="rounded-md border border-border bg-surface p-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex min-w-0 items-center justify-between gap-2">
         <p className="text-xs font-medium uppercase text-muted">{label}</p>
-        <span
+        {showDelta ? <span
           className={`inline-flex items-center gap-1 text-xs font-semibold ${
             positive
               ? "text-scope-green"
@@ -30,7 +31,7 @@ export function MetricCard({
         >
           <DeltaIcon size={14} />
           {delta}
-        </span>
+        </span> : null}
       </div>
       <p className="mt-3 text-2xl font-semibold text-ink">{value}</p>
       <p className="mt-1 text-xs text-muted">{detail}</p>

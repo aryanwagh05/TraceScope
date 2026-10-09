@@ -41,7 +41,7 @@ export default async function TraceDetailPage({
         title={trace.id}
         description={`${trace.model} request opened ${formatDateTime(
           trace.timestamp,
-        )} with ${formatNumber(trace.tokenCount)} tokens and ${formatCurrency(trace.costUsd)} cost.`}
+        )} with ${trace.tokenCountKnown === false ? "unreported" : formatNumber(trace.tokenCount)} tokens and ${trace.costKnown === false ? "unreported" : formatCurrency(trace.costUsd)} cost.`}
         action={<StatusPill status={trace.status} />}
       />
 
@@ -49,10 +49,10 @@ export default async function TraceDetailPage({
 
       <section className="mt-6 grid metric-grid gap-3">
         {[
-          ["Latency", formatMs(trace.latencyMs), "request wall time"],
-          ["Cost", formatCurrency(trace.costUsd), "model and eval spend"],
-          ["Eval score", formatPercent(trace.evalScore), "weighted pass rate"],
-          ["Risk", getRiskLabel(trace.hallucinationRisk), "hallucination signal"],
+          ["Latency", trace.latencyKnown === false ? "n/a" : formatMs(trace.latencyMs), "request wall time"],
+          ["Cost", trace.costKnown === false ? "n/a" : formatCurrency(trace.costUsd), "reported request cost"],
+          ["Eval score", trace.evalScoreKnown === false ? "n/a" : formatPercent(trace.evalScore), "heuristic evaluator average"],
+          ["Risk", trace.hallucinationRiskKnown === false ? "n/a" : getRiskLabel(trace.hallucinationRisk), "groundedness and citation signal"],
         ].map(([label, value, detail]) => (
           <article key={label} className="rounded-md border border-border bg-surface p-4">
             <p className="text-xs font-semibold uppercase text-muted">{label}</p>
@@ -62,8 +62,14 @@ export default async function TraceDetailPage({
         ))}
       </section>
 
+      {trace.gatewayLogId ? (
+        <p className="mt-4 text-sm text-muted">
+          AI Gateway {trace.gatewayId ?? "default"} log: <code className="break-all font-mono text-ink">{trace.gatewayLogId}</code>
+        </p>
+      ) : null}
+
       <section className="mt-6 grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
-        <div className="rounded-md border border-border bg-surface p-4">
+        <div className="min-w-0 rounded-md border border-border bg-surface p-4">
           <h2 className="text-lg font-semibold text-ink">Execution timeline</h2>
           <div className="mt-4 space-y-3">
             {trace.spans.map((span) => (
@@ -71,11 +77,11 @@ export default async function TraceDetailPage({
                 key={span.id}
                 className="grid gap-3 rounded-md border border-border px-3 py-3 md:grid-cols-[1fr_auto]"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink">{span.name}</p>
                   <p className="mt-1 text-xs uppercase text-muted">{span.type}</p>
                   {Object.keys(span.metadata).length ? (
-                    <p className="mt-2 font-mono text-xs text-muted">
+                    <p className="mt-2 break-all font-mono text-xs text-muted">
                       {JSON.stringify(span.metadata)}
                     </p>
                   ) : null}
@@ -106,7 +112,7 @@ export default async function TraceDetailPage({
             <div>
               <p className="mb-2 text-xs font-semibold uppercase text-muted">System prompt</p>
               <p className="rounded-md border border-border bg-[#fbfaf6] p-3 text-sm leading-6 text-ink">
-                {trace.systemPrompt}
+                {trace.systemPrompt || "Not reported"}
               </p>
             </div>
             <div>
@@ -123,6 +129,9 @@ export default async function TraceDetailPage({
         <div className="rounded-md border border-border bg-surface p-4">
           <h2 className="text-lg font-semibold text-ink">RAG inspection</h2>
           <div className="mt-4 space-y-3">
+            {trace.retrievalChunks.length === 0 ? (
+              <p className="text-sm text-muted">No retrieval chunks reported for this trace.</p>
+            ) : null}
             {trace.retrievalChunks.map((chunk) => (
               <article key={chunk.id} className="rounded-md border border-border p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -150,6 +159,9 @@ export default async function TraceDetailPage({
         <div className="rounded-md border border-border bg-surface p-4">
           <h2 className="text-lg font-semibold text-ink">Evaluator output</h2>
           <div className="mt-4 space-y-3">
+            {trace.evalResults.length === 0 ? (
+              <p className="text-sm text-muted">No evaluations recorded for this trace.</p>
+            ) : null}
             {trace.evalResults.map((result) => (
               <div key={result.id} className="rounded-md border border-border p-3">
                 <div className="flex items-center justify-between gap-3">

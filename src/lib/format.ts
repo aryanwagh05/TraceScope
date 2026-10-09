@@ -1,8 +1,11 @@
 export function formatCurrency(value: number) {
+  if (value > 0 && value < 0.00000001) return "<$0.00000001";
+  const precision = value >= 1 ? 2 : value >= 0.01 ? 4 :
+    Math.min(8, Math.max(4, Math.ceil(-Math.log10(value || 1)) + 2));
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: value < 1 ? 3 : 0,
+    maximumFractionDigits: precision,
   }).format(value);
 }
 

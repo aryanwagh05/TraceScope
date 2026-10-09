@@ -33,14 +33,7 @@ async function promoteTrace(formData: FormData) {
   await addEvalCase({
     area: trace.app,
     input: trace.userInput,
-    expectedSignals: [
-      ...new Set([
-        ...trace.tags.slice(0, 3),
-        ...trace.evalResults
-          .filter((result) => !result.passed)
-          .map((result) => result.evaluator.replaceAll("_", " ")),
-      ]),
-    ],
+    expectedSignals: [],
     promotedFromTrace: trace.id,
   });
   revalidatePath("/datasets");
@@ -57,7 +50,7 @@ export default async function DatasetsPage() {
       <PageHeader
         eyebrow="Eval datasets"
         title="Turn trace failures into regression tests"
-        description="Dataset cases are persisted locally and can be promoted from real bad traces, failed evaluator checks, or manual test-case entry."
+        description="Dataset cases are saved to the workspace and can be promoted from failed traces or added manually. Suite runs compare them with observed traces; they do not replay a model."
         action={
           <a
             href="#add-case"
@@ -104,7 +97,7 @@ export default async function DatasetsPage() {
                   </div>
                   <p className="mt-3 text-sm leading-6 text-ink">{testCase.input}</p>
                   <p className="mt-2 text-xs uppercase text-muted">
-                    Expected: {testCase.expectedSignals.join(", ") || "no explicit signals"}
+                    Expected: {testCase.expectedSignals.join(", ") || "observed evaluator score"}
                   </p>
                 </article>
               ))

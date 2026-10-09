@@ -53,7 +53,7 @@ export default async function AlertsPage() {
       </section>
 
       <section className="overflow-x-auto rounded-md border border-border bg-surface">
-        <table className="data-table min-w-[880px] text-left text-sm">
+        <table className="data-table min-w-[760px] text-left text-sm">
           <thead>
             <tr className="bg-surface-strong text-xs uppercase text-muted">
               <th className="px-4 py-3 font-semibold">Rule</th>
@@ -62,7 +62,6 @@ export default async function AlertsPage() {
               <th className="px-4 py-3 font-semibold">Threshold</th>
               <th className="px-4 py-3 font-semibold">Severity</th>
               <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Last fired</th>
             </tr>
           </thead>
           <tbody>
@@ -80,7 +79,6 @@ export default async function AlertsPage() {
                 <td className="px-4 py-3">
                   <AlertStatusPill status={alert.status} />
                 </td>
-                <td className="px-4 py-3 text-xs text-muted">{alert.lastTriggered}</td>
               </tr>
             ))}
           </tbody>
@@ -91,9 +89,11 @@ export default async function AlertsPage() {
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold text-ink">Create alert rule</h2>
           <p className="text-sm text-muted">
-            {firingCount
+            {!rules.length
+              ? "No rules yet. Create one to monitor incoming traces."
+              : firingCount
               ? `${firingCount} rule${firingCount === 1 ? " is" : "s are"} firing on current traces.`
-              : "All enabled rules are below their firing threshold."}
+              : "No rules are currently firing. Rules without matching data are marked separately."}
           </p>
         </div>
 

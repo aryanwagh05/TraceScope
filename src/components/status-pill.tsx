@@ -11,6 +11,7 @@ const alertClass: Record<AlertRule["status"], string> = {
   healthy: "border-[#bad7cb] bg-[#eef8f2] text-scope-green",
   watching: "border-[#ead4ae] bg-[#fff6e6] text-scope-amber",
   firing: "border-[#edc5bd] bg-[#fff0ed] text-scope-red",
+  insufficient_data: "border-border bg-surface-strong text-muted",
 };
 
 const severityClass: Record<Severity, string> = {
@@ -27,7 +28,7 @@ export function StatusPill({ status }: { status: TraceStatus }) {
         statusClass[status],
       )}
     >
-      {status}
+      {status.replaceAll("_", " ")}
     </span>
   );
 }
@@ -40,7 +41,7 @@ export function AlertStatusPill({ status }: { status: AlertRule["status"] }) {
         alertClass[status],
       )}
     >
-      {status}
+      {status.replaceAll("_", " ")}
     </span>
   );
 }

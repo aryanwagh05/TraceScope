@@ -55,6 +55,13 @@ export interface EvalResult {
 
 export interface Trace {
   id: string;
+  gatewayLogId?: string;
+  gatewayId?: string;
+  costKnown?: boolean;
+  latencyKnown?: boolean;
+  tokenCountKnown?: boolean;
+  evalScoreKnown?: boolean;
+  hallucinationRiskKnown?: boolean;
   app: string;
   environment: "prod" | "staging" | "dev";
   model: string;
@@ -82,7 +89,7 @@ export interface AlertRule {
   operator?: ">" | "<";
   threshold: string;
   severity: Severity;
-  status: "healthy" | "watching" | "firing";
+  status: "healthy" | "watching" | "firing" | "insufficient_data";
   lastTriggered: string;
   enabled?: boolean;
 }
@@ -124,7 +131,7 @@ export interface WorkspaceSettings {
 export interface IngestionKey {
   id: string;
   name: string;
-  token: string;
+  token?: string;
   createdAt: string;
   lastUsedAt?: string;
 }

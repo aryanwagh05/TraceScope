@@ -1,9 +1,11 @@
 import { revalidatePath } from "next/cache";
 import { KeyRound, SlidersHorizontal, Users } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { KeyGenerator } from "@/components/key-generator";
 import {
   generateIngestionKey,
   getWorkspaceSettings,
+  revokeIngestionKey,
   saveWorkspaceSettings,
 } from "@/lib/workspace-store";
 import { formatDateTime } from "@/lib/format";
@@ -19,13 +21,24 @@ async function saveSettingsAction(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
-async function generateKeyAction(formData: FormData) {
+async function generateKeyAction(_previous: { token?: string; error?: string }, formData: FormData) {
   "use server";
 
   const name = String(formData.get("keyName") ?? "Local key");
-  await generateIngestionKey(name);
+  try {
+    const key = await generateIngestionKey(name);
+    revalidatePath("/settings");
+    revalidatePath("/", "layout");
+    return { token: key.token };
+  } catch {
+    return { error: "Could not generate the key. Please try again." };
+  }
+}
+
+async function revokeKeyAction(formData: FormData) {
+  "use server";
+  await revokeIngestionKey(String(formData.get("keyId") ?? ""));
   revalidatePath("/settings");
-  revalidatePath("/", "layout");
 }
 
 function NumberField({
@@ -61,7 +74,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="Workspace settings"
         title="Production controls for AI teams"
-        description="These settings drive ingestion authorization, alert thresholds, and the quality budgets shown across the app."
+        description="Save workspace identity and quality budgets. Budgets shape new heuristic evaluations and the workspace rules shown in Alerts; ingestion keys are managed below."
       />
 
       <section className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
@@ -154,7 +167,7 @@ export default async function SettingsPage() {
               </div>
               <div>
                 <dt className="text-xs uppercase text-muted">Mode</dt>
-                <dd className="mt-1 font-semibold text-ink">Local persisted workspace</dd>
+                <dd className="mt-1 font-semibold text-ink">{process.env.TRACESCOPE_WORKER_URL ? "Cloudflare D1" : "Local development"}</dd>
               </div>
             </dl>
           </section>
@@ -164,27 +177,24 @@ export default async function SettingsPage() {
               <KeyRound size={18} className="text-scope-blue" />
               <h2 className="text-lg font-semibold text-ink">Ingestion keys</h2>
             </div>
-            <form action={generateKeyAction} className="mt-4 flex gap-2">
-              <input
-                name="keyName"
-                placeholder="Render worker"
-                className="h-10 min-w-0 flex-1 rounded-md border border-border bg-[#fbfaf6] px-3 text-sm outline-none focus:border-scope-blue"
-              />
-              <button className="h-10 rounded-md border border-border px-4 text-sm font-semibold text-ink">
-                Generate
-              </button>
-            </form>
+            <KeyGenerator action={generateKeyAction} />
             <div className="mt-4 divide-y divide-border">
               {settings.ingestionKeys.map((key) => (
                 <div key={key.id} className="py-3 first:pt-0 last:pb-0">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-ink">{key.name}</p>
-                      <p className="mt-1 font-mono text-xs text-muted">{key.token}</p>
+                      <p className="mt-1 font-mono text-xs text-muted">{key.token ?? "Key hidden after creation"}</p>
                     </div>
-                    <p className="shrink-0 text-xs text-muted">
-                      {key.lastUsedAt ? `Used ${formatDateTime(key.lastUsedAt)}` : "Never used"}
-                    </p>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <p className="text-xs text-muted">
+                        {key.lastUsedAt ? `Used ${formatDateTime(key.lastUsedAt)}` : "Never used"}
+                      </p>
+                      <form action={revokeKeyAction}>
+                        <input type="hidden" name="keyId" value={key.id} />
+                        <button className="text-xs font-semibold text-scope-red">Revoke</button>
+                      </form>
+                    </div>
                   </div>
                 </div>
               ))}

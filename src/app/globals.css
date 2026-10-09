@@ -122,18 +122,13 @@ code {
 .landing-brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 13px;
   color: #ffffff;
 }
 
 .landing-brand-mark {
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  flex: none;
+  color: #8fc8e5;
 }
 
 .landing-brand-name,
@@ -142,16 +137,16 @@ code {
 }
 
 .landing-brand-name {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: 0;
 }
 
 .landing-brand-subtitle {
-  margin-top: 2px;
+  margin-top: 4px;
   color: #a9b7bd;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .landing-nav-links {

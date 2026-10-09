@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Braces, LockKeyhole } from "lucide-react";
+import { LockKeyhole, Radar } from "lucide-react";
 import {
   createSessionToken,
   SESSION_COOKIE_NAME,
@@ -58,14 +58,12 @@ export default async function LoginPage({
       <section className="grid min-h-screen grid-cols-1 lg:grid-cols-[1fr_440px]">
         <div className="flex flex-col justify-between px-6 py-6 sm:px-10 lg:px-14">
           <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-md border border-[#ffffff]/15 bg-[#ffffff]/10">
-              <Braces size={23} strokeWidth={1.8} />
-            </div>
+            <Radar size={29} strokeWidth={1.55} className="shrink-0 text-[#8fc8e5]" aria-hidden="true" />
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#d7dddf]">
+              <p className="text-lg font-semibold text-[#ffffff]">
                 TraceScope
               </p>
-              <p className="text-xs text-[#a9b7bd]">Protected observability console</p>
+              <p className="text-xs text-[#a9b7bd]">LLM observability</p>
             </div>
           </div>
 
@@ -83,11 +81,13 @@ export default async function LoginPage({
             </p>
           </div>
 
-          <p className="text-xs leading-6 text-[#8c9aa1]">
-            Local development password: <span className="font-mono">tracescope-local</span>.
-            Set <span className="font-mono">TRACESCOPE_CONSOLE_PASSWORD</span> and{" "}
-            <span className="font-mono">TRACESCOPE_SESSION_SECRET</span> before deployment.
-          </p>
+          {process.env.NODE_ENV !== "production" && !process.env.TRACESCOPE_CONSOLE_PASSWORD?.trim() ? (
+            <p className="text-xs leading-6 text-[#8c9aa1]">
+              Local development password: <span className="font-mono">tracescope-local</span>.
+              Set <span className="font-mono">TRACESCOPE_CONSOLE_PASSWORD</span> and{" "}
+              <span className="font-mono">TRACESCOPE_SESSION_SECRET</span> before deployment.
+            </p>
+          ) : <span aria-hidden="true" />}
         </div>
 
         <div className="flex items-center border-t border-[#ffffff]/10 bg-[#f7f6f1] p-6 text-ink lg:border-l lg:border-t-0 lg:p-10">

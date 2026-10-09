@@ -5,7 +5,6 @@ import {
   Activity,
   ArrowRight,
   Bell,
-  Braces,
   Database,
   FlaskConical,
   GitCompareArrows,
@@ -67,14 +66,14 @@ const explainers = [
       "AI systems fail in softer ways than ordinary services. A response can be well formatted, fast, and still unsupported by evidence. TraceScope treats prompts, spans, retrieval chunks, evaluator notes, and feedback as one connected record so teams can debug behavior instead of chasing isolated log lines.",
   },
   {
-    title: "What this app is proving",
+    title: "What TraceScope covers",
     body:
-      "This project shows production AI engineering judgment: trace modeling, ingestion security, eval pipelines, RAG inspection, regression datasets, alert thresholds, and model tradeoff analysis. The goal is a portfolio project that an AI platform engineer can actually navigate and critique.",
+      "TraceScope connects trace modeling, ingestion security, evaluation, RAG inspection, regression datasets, alert thresholds, and model tradeoffs. Each view should help an engineer move from a suspicious result to the request details that explain it.",
   },
   {
     title: "Why I am building it",
     body:
-      "I am building TraceScope because teams need more than prompt demos. Real AI products need evidence, budgets, tests, and incident loops. This app lets me demonstrate that I understand how LLM systems behave after they leave the notebook and enter production workflows.",
+      "I started TraceScope because a prompt that works in a demo tells me very little about how it behaves later. I wanted a place to inspect the whole request, keep the evidence alongside the answer, and turn a real failure into something I can test again.",
   },
   {
     title: "How a team would use it",
@@ -87,7 +86,7 @@ const buildReasons = [
   "Make prompt and retrieval behavior inspectable.",
   "Turn failed AI responses into regression tests.",
   "Show cost, latency, and quality tradeoffs in one place.",
-  "Demonstrate production-minded LLMOps work for hiring conversations.",
+  "Keep quality, latency, and usage visible as traffic changes.",
 ];
 
 export function LandingExperience() {
@@ -113,9 +112,7 @@ export function LandingExperience() {
       <section className="landing-hero">
         <header className="landing-nav">
           <Link href="/" className="landing-brand">
-            <span className="landing-brand-mark">
-              <Braces size={22} strokeWidth={1.8} />
-            </span>
+            <Radar size={29} strokeWidth={1.55} className="landing-brand-mark" aria-hidden="true" />
             <span>
               <span className="landing-brand-name">TraceScope</span>
               <span className="landing-brand-subtitle">LLM observability</span>
@@ -131,13 +128,12 @@ export function LandingExperience() {
 
         <div className="landing-hero-grid">
           <div className="landing-hero-copy">
-            <p className="landing-eyebrow">Production AI needs evidence</p>
-            <h1>See every prompt, span, eval, and dollar move through your AI system.</h1>
+            <p className="landing-eyebrow">Production AI, made inspectable</p>
+            <h1>TraceScope</h1>
             <p className="landing-hero-text">
-              TraceScope is a working LLM reliability console for tracing RAG,
-              tools, model calls, structured outputs, evaluator results, cost,
-              latency, and user feedback. It is built to feel like a serious AI
-              platform tool and a sharp portfolio signal.
+              An LLM observability console that follows a request from input to
+              outcome. Inspect prompts, retrieval, model calls, evaluations, cost,
+              and latency in one connected trace, then turn failures into useful tests.
             </p>
             <div className="landing-actions">
               <Link href="/dashboard" className="landing-primary-action">
@@ -158,15 +154,15 @@ export function LandingExperience() {
             </div>
             <div className="landing-node node-retrieval">
               <span>RAG</span>
-              <strong>0.84</strong>
+              <strong>context</strong>
             </div>
             <div className="landing-node node-model">
               <span>Model</span>
-              <strong>1.18s</strong>
+              <strong>response</strong>
             </div>
             <div className="landing-node node-eval">
               <span>Eval</span>
-              <strong>91%</strong>
+              <strong>quality</strong>
             </div>
             <div className="landing-node node-alert">
               <span>Alert</span>
@@ -178,15 +174,15 @@ export function LandingExperience() {
             <span className="landing-link link-d" />
             <div className="landing-console-strip strip-one">
               <span>groundedness</span>
-              <strong>pass</strong>
+              <strong>inspect</strong>
             </div>
             <div className="landing-console-strip strip-two">
               <span>schema validity</span>
-              <strong>100%</strong>
+              <strong>check</strong>
             </div>
             <div className="landing-console-strip strip-three">
               <span>cost budget</span>
-              <strong>$0.034 avg</strong>
+              <strong>review</strong>
             </div>
           </div>
         </div>
@@ -234,11 +230,10 @@ export function LandingExperience() {
       <section id="learn" className="landing-section landing-split">
         <div>
           <p className="landing-eyebrow">Open the topic</p>
-          <h2>Expandable notes for the interview conversation.</h2>
+          <h2>How the system is designed.</h2>
           <p>
-            These sections explain the problem space, the architecture choices,
-            and the reason TraceScope is a useful portfolio project for AI
-            engineering roles.
+            The decisions behind the traces, evaluations, and workflow, plus
+            the reason I started building it.
           </p>
         </div>
         <div className="landing-accordion">
@@ -257,12 +252,11 @@ export function LandingExperience() {
       <section className="landing-section landing-security">
         <div>
           <LockKeyhole size={22} />
-          <h2>Built like a console, presented like a product.</h2>
+          <h2>Public overview. Private telemetry.</h2>
         </div>
         <p>
-          The dashboard is now behind a session gate, while trace ingestion uses
-          separate API keys. That keeps the public story polished and the working
-          tool protected.
+          The landing page is open. The console requires a workspace password,
+          and applications submit traces with separate ingestion keys.
         </p>
         <Link href="/login" className="landing-primary-action">
           Unlock workspace

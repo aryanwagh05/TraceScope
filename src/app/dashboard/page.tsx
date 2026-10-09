@@ -21,13 +21,14 @@ export default async function DashboardPage() {
   const dashboardMetrics = calculateDashboardMetrics(traces);
   const trafficSeries = calculateTrafficSeries(traces);
   const modelCostBreakdown = calculateModelCostBreakdown(traces);
-  const mostExpensive = [...traces].sort((a, b) => b.costUsd - a.costUsd).slice(0, 3);
+  const mostExpensive = traces.filter((trace) => trace.costKnown !== false)
+    .sort((a, b) => b.costUsd - a.costUsd).slice(0, 3);
   const riskBuckets = calculateRiskBuckets(traces);
 
   return (
     <>
       <PageHeader
-        eyebrow="Production overview"
+        eyebrow="Workspace overview"
         title="LLM telemetry without the hand-waving"
         description="Monitor traces, RAG quality, model cost, latency, evaluator drift, schema failures, and user feedback from one engineering console."
         action={
@@ -65,21 +66,21 @@ export default async function DashboardPage() {
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-ink">Latency and eval health</h2>
-              <p className="text-sm text-muted">Six traffic windows across production apps.</p>
+              <p className="text-sm text-muted">Up to six recent four-hour UTC windows.</p>
             </div>
             <ShieldCheck className="text-scope-green" size={22} />
           </div>
-          <TrafficChart data={trafficSeries} />
+          {trafficSeries.length ? <TrafficChart data={trafficSeries} /> : <p className="py-8 text-sm text-muted">No trace activity yet.</p>}
         </div>
 
         <div className="rounded-md border border-border bg-surface p-4">
           <h2 className="text-lg font-semibold text-ink">Hallucination risk</h2>
-          <p className="text-sm text-muted">Risk mix across the sampled traces.</p>
-          <RiskDonut
+          <p className="text-sm text-muted">Risk mix for traces with groundedness or citation evidence.</p>
+          {riskBuckets.low + riskBuckets.medium + riskBuckets.high ? <RiskDonut
             low={riskBuckets.low}
             medium={riskBuckets.medium}
             high={riskBuckets.high}
-          />
+          /> : <p className="py-8 text-sm text-muted">No risk evaluations available yet.</p>}
         </div>
       </section>
 
@@ -97,7 +98,7 @@ export default async function DashboardPage() {
                   <p className="font-mono text-xs font-semibold text-scope-blue">{trace.id}</p>
                   <p className="mt-1 text-sm font-medium text-ink">{trace.app}</p>
                   <p className="text-xs text-muted">
-                    {trace.model} | {formatMs(trace.latencyMs)}
+                    {trace.model} | {trace.latencyKnown === false ? "latency n/a" : formatMs(trace.latencyMs)}
                   </p>
                 </div>
                 <div className="text-right">
@@ -106,13 +107,14 @@ export default async function DashboardPage() {
                 </div>
               </Link>
             ))}
+            {!mostExpensive.length ? <p className="text-sm text-muted">No provider cost reported yet.</p> : null}
           </div>
         </div>
 
         <div className="rounded-md border border-border bg-surface p-4">
           <h2 className="text-lg font-semibold text-ink">Cost by model</h2>
-          <p className="text-sm text-muted">Current 24 hour spend grouped by model.</p>
-          <ModelCostChart data={modelCostBreakdown} />
+          <p className="text-sm text-muted">Observed spend grouped by model.</p>
+          {modelCostBreakdown.length ? <ModelCostChart data={modelCostBreakdown} /> : <p className="py-8 text-sm text-muted">No provider cost reported yet.</p>}
         </div>
       </section>
 
@@ -122,11 +124,10 @@ export default async function DashboardPage() {
             <h2 className="text-lg font-semibold text-ink">Recent traces</h2>
             <p className="text-sm text-muted">
               Eval average:{" "}
-              {formatPercent(
-                traces.length
-                  ? traces.reduce((sum, trace) => sum + trace.evalScore, 0) / traces.length
-                  : 0,
-              )}
+              {traces.some((trace) => trace.evalScoreKnown !== false)
+                ? formatPercent(traces.filter((trace) => trace.evalScoreKnown !== false)
+                    .reduce((sum, trace, _, cohort) => sum + trace.evalScore / cohort.length, 0))
+                : "n/a"}
             </p>
           </div>
           <Link href="/traces" className="text-sm font-semibold text-scope-blue">

@@ -30,7 +30,7 @@ describe("functional page engines", () => {
     expect(suggestions.some((suggestion) => suggestion.trace.id === "tr-1031")).toBe(true);
   });
 
-  it("runs dataset cases against matching traces", () => {
+  it("does not pass a promoted failure against its own source trace", () => {
     const cases: EvalDatasetCase[] = [
       {
         id: "case-contract",
@@ -38,12 +38,42 @@ describe("functional page engines", () => {
         input: "What service credits are available if uptime drops below 99.9 percent?",
         expectedSignals: ["unsupported claim"],
         promotedFromTrace: "tr-1031",
+        createdAt: "2026-07-23T09:00:00Z",
       },
     ];
 
     const run = runEvalSuite(cases, seedTraces);
     expect(run.caseCount).toBe(1);
-    expect(run.matchedTraceCount).toBe(1);
+    expect(run.matchedTraceCount).toBe(0);
+    expect(run.results[0].passed).toBe(false);
+    expect(run.results[0].notes).toContain("No newer comparable trace");
+  });
+
+  it("checks explicit signals on a later comparable trace", () => {
+    const source = seedTraces.find((trace) => trace.id === "tr-1031")!;
+    const later = {
+      ...source,
+      id: "tr-2031",
+      timestamp: "2026-07-24T08:14:48Z",
+      finalResponse: "The SLA addendum specifies the available service credit.",
+      evalScore: 0.95,
+    };
+    const testCase: EvalDatasetCase = {
+      id: "case-contract",
+      area: "Document Q&A",
+      input: source.userInput,
+      expectedSignals: ["SLA addendum"],
+      promotedFromTrace: source.id,
+      createdAt: "2026-07-23T09:00:00Z",
+    };
+
+    const passing = runEvalSuite([testCase], [source, later]);
+    expect(passing.matchedTraceCount).toBe(1);
+    expect(passing.results[0].traceId).toBe(later.id);
+    expect(passing.results[0].passed).toBe(true);
+
+    const failing = runEvalSuite([{ ...testCase, expectedSignals: ["citation missing"] }], [source, later]);
+    expect(failing.results[0].passed).toBe(false);
   });
 
   it("compares real model cohorts", () => {
